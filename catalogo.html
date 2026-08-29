@@ -181,8 +181,8 @@ function App(){
     <div>
       <div className="topbar">
         <div className="brand" style={{alignItems:"center"}}>
-          <img src={LOGO} alt="Tabia'S Sound" style={{height:30,width:"auto",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
-          <b>Vidriera</b><span>Alquileres</span>
+          <img src={LOGO} alt="Tabia'S Sound" style={{height:34,width:"auto",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
+          <b style={{fontSize:24,letterSpacing:"-.01em"}}>Alquileres</b>
         </div>
         <input className="search" placeholder="Buscar equipo por nombre o código…" value={q} onChange={e=>setQ(e.target.value)}/>
         <button className={"cartbtn"+(cartCount?"":" empty")} onClick={()=>setOpenCart(true)}>
