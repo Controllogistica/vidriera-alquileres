@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pedidos · Vidriera Tabia'S Sound</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0C0E11;--panel:#14171C;--panel-2:#1A1E25;--line:#262C35;--line-hi:#39424F;
+    --ink:#E9ECF1;--ink-2:#8C95A4;--ink-3:#5C6675;--amber:#1FC3B8;--amber-dim:#155E56;
+    --live:#35D07F;--alert:#FF4D5E;--mono:'JetBrains Mono',ui-monospace,monospace;}
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;font-size:14px}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em}
+  .mono{font-family:var(--mono)}button{font-family:inherit;cursor:pointer}input,select{font-family:inherit}
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(12,14,17,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px}.brand b{font-size:17px}
+  .brand span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase;border:1px solid var(--amber-dim);padding:2px 6px;border-radius:3px}
+  .wrap{max-width:1000px;margin:0 auto;padding:16px 18px 80px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .chip{background:var(--panel-2);border:1px solid var(--line);color:var(--ink-2);border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;text-decoration:none;display:inline-block}
+  .chip.on{border-color:var(--amber);color:var(--amber);background:rgba(31,195,184,.08)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:9px;cursor:pointer}
+  .card:hover{border-color:var(--line-hi)}
+  .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .grow{flex:1;min-width:0}
+  .muted{color:var(--ink-3);font-size:12px}
+  .tag{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;font-family:var(--mono)}
+  .t-enviado{background:rgba(31,195,184,.12);color:var(--amber)}
+  .t-confirmado{background:rgba(53,208,127,.14);color:var(--live)}
+  .t-rechazado{background:rgba(255,77,94,.12);color:var(--alert)}
+  .t-cancelado{background:var(--panel-2);color:var(--ink-3)}
+  .t-cot{background:rgba(255,176,58,.14);color:#FFB03A}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;justify-content:center;align-items:flex-start;padding:5vh 16px;overflow:auto;z-index:60}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:620px;width:100%;padding:20px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--ink-3);font-weight:600}
+  td.r,th.r{text-align:right;white-space:nowrap}
+  .btn{border:0;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:700}
+  .btn-ok{background:var(--live);color:#062}.btn-no{background:rgba(255,77,94,.14);color:var(--alert);border:1px solid var(--alert)}
+  .btn-ghost{background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line)}
+  .btn-primary{background:var(--amber);color:#0C0E11}
+  .login{max-width:340px;margin:14vh auto;padding:0 20px}
+  .login input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:11px 13px;margin-bottom:10px;outline:none;font-size:14px}
+  .login button{width:100%;background:var(--amber);color:#0C0E11;border:0;border-radius:8px;padding:12px;font-weight:700}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--line-hi);padding:11px 18px;border-radius:8px;font-size:13px;z-index:99}
+  .empty{text-align:center;padding:60px 20px;color:var(--ink-3)}
+  .hint{color:var(--ink-3);font-size:12px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback}=React;
+const SUPABASE_URL="https://qnpcrhapvyynwvuljxze.supabase.co";
+const SUPABASE_KEY="sb_publishable_Ce1Ig7Z_Jdl0NkdqCv3Cog_vNAo606S";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const money=n=>n==null||n===""||isNaN(n)?"—":"$"+Number(n).toLocaleString("es-AR",{maximumFractionDigits:0});
+const dmy=s=>{if(!s)return"";const p=String(s).slice(0,10).split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s;};
+const ESTLBL={enviado:"Enviado",confirmado:"Confirmado",rechazado:"Rechazado",cancelado:"Cancelado"};
+
+function Login({onIn}){
+  const [em,setEm]=useState(""),[pw,setPw]=useState(""),[busy,setBusy]=useState(false),[err,setErr]=useState("");
+  const go=async()=>{setBusy(true);setErr("");const {error}=await sb.auth.signInWithPassword({email:em.trim(),password:pw});
+    if(error){setErr("No pudimos entrar. Revisá mail y contraseña.");setBusy(false);}else onIn();};
+  return (<div className="login">
+    <div className="brand" style={{marginBottom:20}}><b>Pedidos</b><span>Vidriera</span></div>
+    <p className="hint" style={{marginBottom:16}}>Entrá con tu cuenta autorizada de Tabia'S Sound.</p>
+    <input placeholder="Mail" value={em} onChange={e=>setEm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}/>
+    <input placeholder="Contraseña" type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}/>
+    <button onClick={go} disabled={busy||!em||!pw}>{busy?"Entrando…":"Entrar"}</button>
+    {err&&<p style={{color:"var(--alert)",fontSize:13,marginTop:12}}>{err}</p>}
+  </div>);
+}
+
+function App(){
+  const [sess,setSess]=useState(null);
+  const [noAdmin,setNoAdmin]=useState(false);
+  const [estado,setEstado]=useState("enviado");
+  const [rows,setRows]=useState([]);const [load,setLoad]=useState(false);
+  const [sel,setSel]=useState(null);const [det,setDet]=useState(null);
+  const [toast,setToast]=useState(null);const [busy,setBusy]=useState(false);
+  const say=m=>{setToast(m);setTimeout(()=>setToast(null),2400);};
+
+  useEffect(()=>{sb.auth.getSession().then(({data})=>setSess(data.session));
+    const {data:s}=sb.auth.onAuthStateChange((_e,x)=>setSess(x));return ()=>s.subscription.unsubscribe();},[]);
+
+  const load1=useCallback(async()=>{
+    if(!sess)return;setLoad(true);setNoAdmin(false);
+    const {data,error}=await sb.rpc("alq_pedidos_admin",{p_estado:estado||null});
+    if(error){ if((error.message||"").indexOf("No autorizado")>=0) setNoAdmin(true); setRows([]); }
+    else setRows(data||[]);
+    setLoad(false);
+  },[sess,estado]);
+  useEffect(()=>{load1();},[load1]);
+
+  const abrir=async(p)=>{setSel(p);setDet(null);
+    const {data}=await sb.rpc("alq_pedido_detalle_admin",{p_pedido:p.id});setDet(data||null);};
+  const setEst=async(nuevo)=>{ if(!sel)return; setBusy(true);
+    const {data,error}=await sb.rpc("alq_pedido_set_estado",{p_pedido:sel.id,p_estado:nuevo});
+    setBusy(false);
+    if(error||!data||!data.ok){say("No se pudo actualizar");return;}
+    say(nuevo==="confirmado"?"Pedido confirmado":nuevo==="rechazado"?"Pedido rechazado":"Actualizado");
+    setSel(null);setDet(null);load1();
+  };
+
+  if(!sess) return <Login onIn={()=>{}}/>;
+  if(noAdmin) return <div className="empty"><h2>Sin permiso</h2><p>Tu cuenta no tiene permiso para ver los pedidos. Pedile a administración que te active la Vidriera.</p><a className="chip" href="/" style={{marginRight:8}}>← Curaduría</a><button className="chip" onClick={()=>sb.auth.signOut()}>Salir</button></div>;
+
+  return (<div>
+    <div className="topbar">
+      <div className="brand"><b>Pedidos</b><span>Vidriera</span></div>
+      <span style={{flex:1}}></span>
+      <a className="chip" href="/">← Curaduría</a>
+      <a className="chip" href="/catalogo" target="_blank" rel="noopener">Vitrina pública ↗</a>
+      <button className="chip" onClick={()=>sb.auth.signOut()}>Salir</button>
+    </div>
+    <div className="wrap">
+      <div className="chips">
+        {[["enviado","Nuevos"],["confirmado","Confirmados"],["rechazado","Rechazados"],["","Todos"]].map(([k,l])=>(
+          <button key={k||"all"} className={"chip"+(estado===k?" on":"")} onClick={()=>setEstado(k)}>{l}</button>
+        ))}
+      </div>
+      {load && <p className="hint">Cargando…</p>}
+      {!load && rows.length===0 && <div className="empty">No hay pedidos en este estado.</div>}
+      {rows.map(p=>(
+        <div className="card" key={p.id} onClick={()=>abrir(p)}>
+          <div className="row">
+            <div className="grow">
+              <div style={{fontWeight:700}}>#{p.numero} · {p.cliente||"—"} {p.empresa?<span className="muted">· {p.empresa}</span>:null}</div>
+              <div className="muted">{p.email||""}{p.telefono?" · "+p.telefono:""}</div>
+              <div className="muted">{dmy(p.fecha_desde)} → {dmy(p.fecha_hasta)} · {p.dias} día(s) · {p.n_items} ítem(s){Number(p.n_cotizar)>0?<span className="tag t-cot" style={{marginLeft:6}}>{p.n_cotizar} a cotizar</span>:null}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div className="mono" style={{fontWeight:700}}>{money(p.total)} <span className="muted">+IVA</span></div>
+              <span className={"tag t-"+p.estado}>{ESTLBL[p.estado]||p.estado}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {sel && <div className="overlay" onClick={e=>{if(e.target.className==="overlay"){setSel(null);setDet(null);}}}>
+      <div className="sheet">
+        <div className="row" style={{marginBottom:6}}>
+          <h3 className="grow" style={{margin:0}}>Pedido #{sel.numero}</h3>
+          <span className={"tag t-"+sel.estado}>{ESTLBL[sel.estado]||sel.estado}</span>
+        </div>
+        {!det && <p className="hint">Cargando detalle…</p>}
+        {det && <>
+          <div className="muted" style={{marginBottom:8}}>
+            <b style={{color:"var(--ink)"}}>{det.cliente&&det.cliente.nombre}</b>{det.cliente&&det.cliente.empresa?" · "+det.cliente.empresa:""}<br/>
+            {det.cliente&&det.cliente.email}{det.cliente&&det.cliente.telefono?" · "+det.cliente.telefono:""}{det.cliente&&det.cliente.cuit?" · CUIT "+det.cliente.cuit:""}
+          </div>
+          <div className="muted">Período: {dmy(det.pedido.fecha_desde)} → {dmy(det.pedido.fecha_hasta)} · {det.pedido.dias} día(s) · {det.pedido.con_logistica?("Logística"+(det.pedido.direccion_entrega?" — "+det.pedido.direccion_entrega:"")):"Retiro en depósito"}</div>
+          {det.pedido.observacion && <div className="muted" style={{marginTop:4}}>Obs: {det.pedido.observacion}</div>}
+          <div style={{overflowX:"auto"}}>
+          <table><thead><tr><th>Equipo</th><th className="r">Cant.</th><th className="r">Precio período</th><th className="r">Subtotal</th></tr></thead>
+          <tbody>{(det.items||[]).map(i=>(
+            <tr key={i.id}><td>{i.nombre}</td><td className="r">{i.cantidad}</td>
+              <td className="r">{Number(i.precio_dia)>0?money(i.precio_dia*Number(i.multiplicador||1)):<span className="tag t-cot">a cotizar</span>}</td>
+              <td className="r">{Number(i.precio_dia)>0?money(i.subtotal):"—"}</td></tr>
+          ))}</tbody>
+          <tfoot><tr><td colSpan={3} className="r"><b>Subtotal</b></td><td className="r"><b>{money(det.pedido.subtotal)} +IVA</b></td></tr></tfoot>
+          </table></div>
+
+          <div className="row" style={{marginTop:16,justifyContent:"flex-end",gap:8}}>
+            <button className="btn btn-ghost" onClick={()=>{setSel(null);setDet(null);}}>Cerrar</button>
+            {sel.estado!=="rechazado" && <button className="btn btn-no" disabled={busy} onClick={()=>setEst("rechazado")}>Rechazar</button>}
+            {sel.estado!=="confirmado" && <button className="btn btn-ok" disabled={busy} onClick={()=>setEst("confirmado")}>✓ Confirmar</button>}
+            <button className="btn btn-primary" disabled title="Próxima fase" style={{opacity:.5,cursor:"not-allowed"}}>Generar presupuesto</button>
+          </div>
+          <p className="hint" style={{textAlign:"right",marginBottom:0}}>Completar precios / “Generar presupuesto” se activan en la próxima fase.</p>
+        </>}
+      </div>
+    </div>}
+
+    {toast && <div className="toast">{toast}</div>}
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

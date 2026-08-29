@@ -96,6 +96,7 @@
     display:inline-flex;align-items:center;gap:6px;
     background:var(--panel-2);border:1px solid var(--line);
     color:var(--ink-2);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;
+    text-decoration:none;
   }
   .chip:hover{border-color:var(--line-hi);color:var(--ink)}
   .chip.on{border-color:var(--amber);color:var(--amber);background:rgba(255,176,58,.08)}
@@ -534,6 +535,8 @@ function App(){
         </div>
         <input className="search" placeholder="Buscar por nombre o código…"
                value={q} onChange={e=>setQ(e.target.value)}/>
+        <a className="chip" href="/pedidos">📥 Pedidos</a>
+        <a className="chip" href="/catalogo" target="_blank" rel="noopener">Vitrina pública ↗</a>
         <button className="chip" onClick={()=>sb.auth.signOut()}>Salir</button>
       </div>
 

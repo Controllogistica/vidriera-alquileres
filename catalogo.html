@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vidriera de Alquileres · Tabia'S Sound</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0C0E11;--panel:#14171C;--panel-2:#1A1E25;--line:#262C35;--line-hi:#39424F;
+    --ink:#E9ECF1;--ink-2:#8C95A4;--ink-3:#5C6675;--amber:#1FC3B8;--amber-dim:#155E56;
+    --live:#35D07F;--alert:#FF4D5E;--mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em}
+  .mono{font-family:var(--mono)} button{font-family:inherit;cursor:pointer} input,select{font-family:inherit}
+  ::selection{background:var(--amber);color:#000}
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(12,14,17,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand b{font-family:'Space Grotesk';font-size:18px;font-weight:700}
+  .brand span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase;border:1px solid var(--amber-dim);padding:2px 6px;border-radius:3px}
+  .search{flex:1;min-width:180px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 12px;font-size:14px;outline:none}
+  .search:focus{border-color:var(--amber)}
+  .cartbtn{background:var(--amber);color:#0C0E11;border:0;border-radius:8px;padding:9px 14px;font-weight:700;font-size:13px;display:flex;gap:8px;align-items:center}
+  .cartbtn.empty{background:var(--panel);color:var(--ink-2);border:1px solid var(--line)}
+  .daterow{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .fld label{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px;font-family:var(--mono)}
+  .fld input,.fld select{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:8px 10px;font-size:13px;outline:none}
+  .fld input:focus,.fld select:focus{border-color:var(--amber)}
+  .tramoinfo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+  .tramoinfo b{color:var(--amber)}
+  .wrap{display:grid;grid-template-columns:210px 1fr;gap:0;min-height:60vh}
+  @media(max-width:820px){.wrap{grid-template-columns:1fr}.rail{display:none!important}}
+  .rail{border-right:1px solid var(--line);padding:18px 14px;background:var(--panel)}
+  .rail h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:500}
+  .areabtn{width:100%;text-align:left;background:none;border:0;color:var(--ink-2);padding:8px 10px;border-radius:6px;font-size:13px;display:flex;justify-content:space-between;gap:8px}
+  .areabtn:hover{background:var(--panel-2);color:var(--ink)}
+  .areabtn.sel{background:var(--panel-2);color:var(--ink);box-shadow:inset 2px 0 0 var(--amber)}
+  .main{padding:18px 20px 90px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .card:hover{border-color:var(--line-hi)}
+  .ph{aspect-ratio:4/3;background:var(--panel-2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .ph img{width:100%;height:100%;object-fit:contain}
+  .ph.empty{color:var(--ink-3);font-family:var(--mono);font-size:10px;letter-spacing:.1em}
+  .cbody{padding:11px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .cnm{font-weight:600;font-size:13.5px;line-height:1.25}
+  .cmeta{font-family:var(--mono);font-size:10px;color:var(--ink-3);display:flex;gap:8px;flex-wrap:wrap}
+  .cprice{margin-top:auto;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink)}
+  .cprice small{font-size:10px;color:var(--ink-3);font-weight:400}
+  .cotizar{color:var(--amber);font-family:var(--mono);font-size:12px;font-weight:700}
+  .add{border:1px solid var(--line-hi);background:var(--panel-2);color:var(--ink);border-radius:7px;padding:8px;font-size:12px;font-weight:700}
+  .add:hover{border-color:var(--amber);color:var(--amber)}
+  .qtybox{display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .qtybox button{width:28px;height:28px;border-radius:6px;border:1px solid var(--line-hi);background:var(--panel-2);color:var(--ink);font-size:15px}
+  .qtybox b{font-family:var(--mono)}
+  .pager{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:22px}
+  .pager button{background:var(--panel);border:1px solid var(--line);color:var(--ink-2);border-radius:7px;padding:8px 14px;font-size:13px}
+  .pager button:disabled{opacity:.3;cursor:not-allowed}
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(400px,94vw);background:var(--panel);border-left:1px solid var(--line);z-index:60;display:flex;flex-direction:column;box-shadow:-16px 0 40px rgba(0,0,0,.5)}
+  .drawer .dh{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .drawer .dbody{flex:1;overflow:auto;padding:12px 16px}
+  .drawer .df{border-top:1px solid var(--line);padding:16px 18px}
+  .litem{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .litem .li-img{width:44px;height:44px;border-radius:6px;background:var(--panel-2);overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center}
+  .litem .li-img img{width:100%;height:100%;object-fit:contain}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
+  .hint{color:var(--ink-3);font-size:12px}
+  .fldl{display:block;font-size:11px;color:var(--ink-3);margin:8px 0 3px;font-weight:600}
+  .finput{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 11px;font-size:14px;outline:none;font-family:inherit}
+  .finput:focus{border-color:var(--amber)}
+  .two2{display:flex;gap:8px}.two2>div{flex:1;min-width:0}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback} = React;
+const SUPABASE_URL = "https://qnpcrhapvyynwvuljxze.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Ce1Ig7Z_Jdl0NkdqCv3Cog_vNAo606S";
+const LOGO = "https://qnpcrhapvyynwvuljxze.supabase.co/storage/v1/object/public/gestion/branding/logo-stock.png";
+const PAGE = 60;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{persistSession:false} });
+const money = n => n==null||n===""||isNaN(n) ? "—" : "$"+Number(n).toLocaleString("es-AR",{maximumFractionDigits:0});
+const hoy = () => new Date().toISOString().slice(0,10);
+const addDays = (d,n)=>{const x=new Date(d+"T00:00:00");x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);};
+function diasEntre(desde,hasta){ if(!desde||!hasta) return 1; const a=new Date(desde+"T00:00:00"), b=new Date(hasta+"T00:00:00"); const d=Math.round((b-a)/86400000)+1; return d>0?d:1; }
+function tramoDe(tramos,dias){ let t=tramos.find(t=> dias>=(t.dias_min||0) && (t.dias_max==null || dias<=t.dias_max)); return t || tramos[tramos.length-1] || {multiplicador:1,nombre:dias+" día(s)",requiere_cotizacion:false}; }
+
+// Agrupar productos por TIPO inferido del nombre (no hay campo tipo; se deduce por palabras clave).
+const TIPO_ORDEN = ["Consolas / Mixers","Line array","Parlantes / Bafles","Subwoofers","Potencias / Amplificadores","Monitores","Sistemas in-ear","Micrófonos","Cajas directas","Mangueras / Stage box","Soportes y pies","Cables y conexionado","Generadores","Otros"];
+const TIPO_RX = [
+  [/consola|mixer|mezclad/i,"Consolas / Mixers"],
+  [/generador|grupo elect/i,"Generadores"],
+  [/manguera|multipin|multipar|snake|stage ?box|stagebox/i,"Mangueras / Stage box"],
+  [/subwoofer|\bsub\b|ks28|sb28|ks21|ko40|ko70|apogee ds|ds ?5/i,"Subwoofers"],
+  [/line ?array|linear-?f|l-?acoustics/i,"Line array"],
+  [/monitor|wedge/i,"Monitores"],
+  [/\bpotencia\b|amplificador|\bamp\b|power ?soft|powersoft|lab ?gruppen/i,"Potencias / Amplificadores"],
+  [/in ?ear|iem|\bpsm\b/i,"Sistemas in-ear"],
+  [/pie |pie de|tr[ií]pode|soporte|clamp|caño|malacate/i,"Soportes y pies"],
+  [/micr[oó]fono|micrfono|\bmic\b|sm58|sm57|\bbeta\b/i,"Micrófonos"],
+  [/caja directa|direct box|red box|imp2/i,"Cajas directas"],
+  [/canon|cable|xlr|powercon|speakon|alargue|zapatilla|pasacable|tensi[oó]n|ficha|conector|placa dante/i,"Cables y conexionado"],
+  [/\bcaja\b|parlante|bafle|full ?range|caja ac[uú]stica|speaker|sistema de sonido|nexo/i,"Parlantes / Bafles"],
+];
+function tipoDe(nombre){ const s=(nombre||"").toLowerCase(); for(const pair of TIPO_RX){ if(pair[0].test(s)) return pair[1]; } return "Otros"; }
+function agrupar(rows){
+  const map={};
+  rows.forEach(p=>{ const t=tipoDe(p.nombre); (map[t]=map[t]||[]).push(p); });
+  Object.keys(map).forEach(t=> map[t].sort((a,b)=>{
+    const pa=a.precio_alquiler>0?1:0, pb=b.precio_alquiler>0?1:0;
+    if(pa!==pb) return pb-pa;
+    if(pa) return Number(b.precio_alquiler)-Number(a.precio_alquiler);
+    return (a.nombre||"").localeCompare(b.nombre||"","es");
+  }));
+  const orden = TIPO_ORDEN.filter(t=>map[t]);
+  Object.keys(map).forEach(t=>{ if(orden.indexOf(t)<0) orden.push(t); });
+  return orden.map(t=>({tipo:t, items:map[t]}));
+}
+
+function App(){
+  const [meta,setMeta]=useState({areas:[],tramos:[]});
+  const [rows,setRows]=useState([]); const [total,setTotal]=useState(0);
+  const [area,setArea]=useState(null); const [q,setQ]=useState("");
+  const [load,setLoad]=useState(false);
+  const [desde,setDesde]=useState(hoy()); const [hasta,setHasta]=useState(addDays(hoy(),0));
+  const [cart,setCart]=useState({}); const [openCart,setOpenCart]=useState(false);
+  const [paso,setPaso]=useState('cart'); const [sending,setSending]=useState(false); const [pedidoOk,setPedidoOk]=useState(null); const [errMsg,setErrMsg]=useState("");
+  const [form,setForm]=useState({nombre:"",email:"",telefono:"",empresa:"",cuit:"",entrega:"retiro",direccion:"",obs:""});
+
+  const dias = diasEntre(desde,hasta);
+  const tramo = tramoDe(meta.tramos, dias);
+  const mult = Number(tramo.multiplicador||1);
+
+  useEffect(()=>{ sb.rpc("alq_vidriera_meta").then(({data})=> data && setMeta(data)); },[]);
+  const loadRows = useCallback(async()=>{
+    setLoad(true);
+    const {data,error}=await sb.rpc("alq_vidriera_items",{p_area:area,p_q:q.trim()||null,p_limit:500,p_offset:0});
+    if(!error){ setRows(data||[]); setTotal((data&&data[0]&&Number(data[0].total_count))||0); }
+    setLoad(false);
+  },[area,q]);
+  useEffect(()=>{ loadRows(); },[loadRows]);
+
+  const setQty=(p,delta)=>setCart(c=>{
+    const cur=c[p.id]?c[p.id].qty:0; const nq=Math.max(0,cur+delta); const n={...c};
+    if(nq<=0) delete n[p.id]; else n[p.id]={p,qty:nq}; return n;
+  });
+  const cartItems=Object.values(cart);
+  const cartCount=cartItems.reduce((a,i)=>a+i.qty,0);
+  let cartTotal=0, hayCotizar=false;
+  cartItems.forEach(i=>{ if(i.p.precio_alquiler>0){ cartTotal+= i.p.precio_alquiler*mult*i.qty; } else { hayCotizar=true; } });
+
+  const setF=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const enviar=async()=>{
+    setErrMsg("");
+    if(!form.nombre.trim()||!form.email.trim()){ setErrMsg("Completá tu nombre y email."); return; }
+    if(cartItems.length===0){ setErrMsg("Agregá al menos un equipo."); return; }
+    setSending(true);
+    const items=cartItems.map(i=>({producto_id:i.p.id,cantidad:i.qty}));
+    const {data,error}=await sb.rpc("alq_crear_pedido",{
+      p_nombre:form.nombre, p_email:form.email, p_telefono:form.telefono||null, p_empresa:form.empresa||null, p_cuit:form.cuit||null,
+      p_desde:desde, p_hasta:hasta, p_entrega:form.entrega, p_direccion:form.entrega==="logistica"?form.direccion:null, p_obs:form.obs||null, p_items:items
+    });
+    setSending(false);
+    if(error||!data||!data.ok){ setErrMsg((data&&data.error)||"No se pudo enviar la solicitud. Probá de nuevo."); return; }
+    setPedidoOk(data); setPaso("ok"); setCart({});
+  };
+
+  const grupos=agrupar(rows);
+
+  return (
+    <div>
+      <div className="topbar">
+        <div className="brand" style={{alignItems:"center"}}>
+          <img src={LOGO} alt="Tabia'S Sound" style={{height:30,width:"auto",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
+          <b>Vidriera</b><span>Alquileres</span>
+        </div>
+        <input className="search" placeholder="Buscar equipo por nombre o código…" value={q} onChange={e=>setQ(e.target.value)}/>
+        <button className={"cartbtn"+(cartCount?"":" empty")} onClick={()=>setOpenCart(true)}>
+          🛒 {cartCount>0 ? (cartCount+" ítem(s)") : "Mi pedido"}
+        </button>
+      </div>
+
+      <div className="daterow">
+        <div className="fld"><label>Desde</label><input type="date" value={desde} min={hoy()} onChange={e=>{setDesde(e.target.value); if(hasta<e.target.value)setHasta(e.target.value);}}/></div>
+        <div className="fld"><label>Hasta</label><input type="date" value={hasta} min={desde} onChange={e=>setHasta(e.target.value)}/></div>
+        <div className="tramoinfo">
+          Alquiler de <b>{dias}</b> día(s) · tramo <b>{tramo.nombre}</b>{mult!==1 && <> · precio ×<b>{mult}</b></>}
+          {tramo.requiere_cotizacion && <> · <span style={{color:"var(--ink-3)"}}>sujeto a cotización</span></>}
+        </div>
+      </div>
+
+      <div className="wrap">
+        <aside className="rail">
+          <h3>Áreas</h3>
+          <button className={"areabtn"+(!area?" sel":"")} onClick={()=>setArea(null)}>Todas</button>
+          {meta.areas.map(a=>(
+            <button key={a.id} className={"areabtn"+(area===a.id?" sel":"")} onClick={()=>setArea(a.id)}>
+              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.nombre}</span>
+            </button>
+          ))}
+        </aside>
+
+        <main className="main">
+          {load && <p className="hint">Cargando…</p>}
+          {!load && rows.length===0 && <div className="empty-state"><h3>No encontramos equipos con esa búsqueda</h3></div>}
+          {!load && grupos.map(g=>(
+            <section key={g.tipo} style={{marginBottom:26}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:10,margin:"4px 0 12px",borderBottom:"1px solid var(--line)",paddingBottom:7}}>
+                <h3 style={{margin:0,fontSize:15,color:"var(--amber)"}}>{g.tipo}</h3>
+                <span className="mono" style={{fontSize:11,color:"var(--ink-3)"}}>{g.items.length}</span>
+              </div>
+              <div className="grid">
+                {g.items.map(p=>{
+                  const q0=cart[p.id]?cart[p.id].qty:0;
+                  const tienePrecio=p.precio_alquiler>0;
+                  return (
+                    <div className="card" key={p.id}>
+                      <div className={"ph"+(p.imagen_url?"":" empty")}>
+                        {p.imagen_url? <img src={p.imagen_url} alt="" onError={e=>{e.target.style.opacity=.15}}/> : "SIN FOTO"}
+                      </div>
+                      <div className="cbody">
+                        <div className="cnm">{p.nombre}</div>
+                        <div className="cmeta"><span>{p.codigo_producto||"s/cód"}</span><span>{p.area}</span></div>
+                        <div className="cprice">
+                          {tienePrecio
+                            ? <>{money(p.precio_alquiler*mult)} <small>+IVA / {dias} día(s)</small></>
+                            : <span className="cotizar">A cotizar</span>}
+                        </div>
+                        {q0===0
+                          ? <button className="add" onClick={()=>setQty(p,1)}>+ Agregar</button>
+                          : <div className="qtybox"><button onClick={()=>setQty(p,-1)}>–</button><b>{q0}</b><button onClick={()=>setQty(p,1)}>+</button></div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </main>
+      </div>
+
+      {openCart && <>
+        <div className="overlay" onClick={()=>setOpenCart(false)}/>
+        <div className="drawer">
+          <div className="dh"><h3 style={{margin:0}}>Mi pedido</h3><button className="areabtn" style={{width:"auto"}} onClick={()=>setOpenCart(false)}>✕</button></div>
+          <div className="dbody">
+            {paso==="ok" ? (
+              <div className="empty-state">
+                <h2 style={{color:"var(--live)"}}>¡Solicitud enviada!</h2>
+                <p>Tu pedido <b>#{pedidoOk&&pedidoOk.numero}</b> quedó registrado. Te vamos a contactar para confirmar disponibilidad y el presupuesto final.</p>
+              </div>
+            ) : paso==="form" ? (
+              <div>
+                <p className="hint" style={{marginTop:0}}>Alquiler de <b style={{color:"var(--amber)"}}>{dias}</b> día(s) · {desde} → {hasta}. Dejanos tus datos y te contactamos.</p>
+                <label className="fldl">Nombre y apellido *</label>
+                <input className="finput" value={form.nombre} onChange={e=>setF("nombre",e.target.value)}/>
+                <label className="fldl">Email *</label>
+                <input className="finput" type="email" value={form.email} onChange={e=>setF("email",e.target.value)}/>
+                <div className="two2">
+                  <div><label className="fldl">Teléfono / WhatsApp</label><input className="finput" value={form.telefono} onChange={e=>setF("telefono",e.target.value)}/></div>
+                  <div><label className="fldl">Empresa</label><input className="finput" value={form.empresa} onChange={e=>setF("empresa",e.target.value)}/></div>
+                </div>
+                <label className="fldl">¿Cómo lo recibís?</label>
+                <div style={{display:"flex",gap:8,marginBottom:2}}>
+                  <button className={"chip"+(form.entrega==="retiro"?" on":"")} onClick={()=>setF("entrega","retiro")}>Retiro en depósito</button>
+                  <button className={"chip"+(form.entrega==="logistica"?" on":"")} onClick={()=>setF("entrega","logistica")}>Con logística</button>
+                </div>
+                {form.entrega==="logistica" && <><label className="fldl">Dirección de entrega</label><input className="finput" value={form.direccion} onChange={e=>setF("direccion",e.target.value)}/></>}
+                <label className="fldl">Comentario (opcional)</label>
+                <textarea className="finput" rows={2} value={form.obs} onChange={e=>setF("obs",e.target.value)}/>
+                {errMsg && <p style={{color:"var(--alert)",fontSize:13,marginBottom:0}}>{errMsg}</p>}
+              </div>
+            ) : (
+              <>
+                <p className="hint" style={{marginTop:0}}>Alquiler de <b style={{color:"var(--amber)"}}>{dias}</b> día(s) · {desde} → {hasta}</p>
+                {cartItems.length===0 && <div className="empty-state">Todavía no agregaste equipos.</div>}
+                {cartItems.map(i=>(
+                  <div className="litem" key={i.p.id}>
+                    <div className="li-img">{i.p.imagen_url? <img src={i.p.imagen_url} alt=""/> : ""}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:600,fontSize:13}}>{i.p.nombre}</div>
+                      <div className="cmeta">{i.p.precio_alquiler>0 ? money(i.p.precio_alquiler*mult)+" +IVA × "+i.qty : "A cotizar × "+i.qty}</div>
+                    </div>
+                    <div className="qtybox" style={{gap:6}}>
+                      <button onClick={()=>setQty(i.p,-1)}>–</button><b>{i.qty}</b><button onClick={()=>setQty(i.p,1)}>+</button>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+          <div className="df">
+            {paso==="ok" ? (
+              <button className="cartbtn" style={{width:"100%",justifyContent:"center"}} onClick={()=>{setOpenCart(false);setPaso("cart");setPedidoOk(null);}}>Cerrar</button>
+            ) : paso==="form" ? (
+              <div style={{display:"flex",gap:8}}>
+                <button className="cartbtn empty" onClick={()=>setPaso("cart")}>← Volver</button>
+                <button className="cartbtn" style={{flex:1,justifyContent:"center",opacity:sending?.6:1}} disabled={sending} onClick={enviar}>{sending?"Enviando…":"Enviar solicitud"}</button>
+              </div>
+            ) : (
+              <>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span className="hint">Subtotal estimado</span>
+                  <b className="mono" style={{fontSize:17}}>{money(cartTotal)} <small style={{fontSize:11,color:"var(--ink-3)"}}>+IVA</small></b>
+                </div>
+                {hayCotizar && <p className="hint" style={{margin:"0 0 10px"}}>Algunos ítems son "a cotizar": el precio final lo confirma Tabia.</p>}
+                <button className="cartbtn" style={{width:"100%",justifyContent:"center",opacity:cartItems.length?1:.5}} disabled={!cartItems.length} onClick={()=>setPaso("form")}>Continuar →</button>
+              </>
+            )}
+          </div>
+        </div>
+      </>}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
