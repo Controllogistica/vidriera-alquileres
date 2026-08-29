@@ -59,6 +59,7 @@ const {useState,useEffect,useCallback}=React;
 const SUPABASE_URL="https://qnpcrhapvyynwvuljxze.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ce1Ig7Z_Jdl0NkdqCv3Cog_vNAo606S";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const PRESU_URL="https://presupuestos-tabiasound.vercel.app";
 const money=n=>n==null||n===""||isNaN(n)?"—":"$"+Number(n).toLocaleString("es-AR",{maximumFractionDigits:0});
 const dmy=s=>{if(!s)return"";const p=String(s).slice(0,10).split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s;};
 const ESTLBL={enviado:"Enviado",confirmado:"Confirmado",rechazado:"Rechazado",cancelado:"Cancelado"};
@@ -106,6 +107,18 @@ function App(){
     if(error||!data||!data.ok){say("No se pudo actualizar");return;}
     say(nuevo==="confirmado"?"Pedido confirmado":nuevo==="rechazado"?"Pedido rechazado":"Actualizado");
     setSel(null);setDet(null);load1();
+  };
+  const genPresu=async()=>{
+    if(!sel)return;
+    if(det&&det.presupuesto){ window.open(PRESU_URL+"/?p="+det.presupuesto.id,"_blank","noopener"); return; }
+    setBusy(true);
+    const {data,error}=await sb.rpc("alq_pedido_a_presupuesto",{p_pedido:sel.id});
+    setBusy(false);
+    if(error||!data){ say(error&&error.message?error.message:"No se pudo generar el presupuesto"); return; }
+    say("Presupuesto generado");
+    window.open(PRESU_URL+"/?p="+data,"_blank","noopener");
+    const {data:d2}=await sb.rpc("alq_pedido_detalle_admin",{p_pedido:sel.id});
+    setDet(d2||null); load1();
   };
 
   if(!sess) return <Login onIn={()=>{}}/>;
@@ -172,9 +185,15 @@ function App(){
             <button className="btn btn-ghost" onClick={()=>{setSel(null);setDet(null);}}>Cerrar</button>
             {sel.estado!=="rechazado" && <button className="btn btn-no" disabled={busy} onClick={()=>setEst("rechazado")}>Rechazar</button>}
             {sel.estado!=="confirmado" && <button className="btn btn-ok" disabled={busy} onClick={()=>setEst("confirmado")}>✓ Confirmar</button>}
-            <button className="btn btn-primary" disabled title="Próxima fase" style={{opacity:.5,cursor:"not-allowed"}}>Generar presupuesto</button>
+            {det.presupuesto
+              ? <button className="btn btn-primary" onClick={genPresu}>📄 Ver presupuesto #{det.presupuesto.numero}</button>
+              : <button className="btn btn-primary" disabled={busy||sel.estado!=="confirmado"}
+                        title={sel.estado!=="confirmado"?"Primero confirmá el pedido":""}
+                        style={sel.estado!=="confirmado"?{opacity:.5,cursor:"not-allowed"}:{}}
+                        onClick={genPresu}>Generar presupuesto →</button>}
           </div>
-          <p className="hint" style={{textAlign:"right",marginBottom:0}}>Completar precios / “Generar presupuesto” se activan en la próxima fase.</p>
+          {!det.presupuesto && sel.estado!=="confirmado" && <p className="hint" style={{textAlign:"right",marginBottom:0}}>Confirmá el pedido para poder generar el presupuesto.</p>}
+          {det.presupuesto && <p className="hint" style={{textAlign:"right",marginBottom:0}}>Ya tiene el presupuesto #{det.presupuesto.numero} generado. Editalo y envialo desde Presupuestos.</p>}
         </>}
       </div>
     </div>}
