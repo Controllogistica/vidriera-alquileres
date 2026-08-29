@@ -96,7 +96,7 @@ function diasEntre(desde,hasta){ if(!desde||!hasta) return 1; const a=new Date(d
 function tramoDe(tramos,dias){ let t=tramos.find(t=> dias>=(t.dias_min||0) && (t.dias_max==null || dias<=t.dias_max)); return t || tramos[tramos.length-1] || {multiplicador:1,nombre:dias+" día(s)",requiere_cotizacion:false}; }
 
 // Agrupar productos por TIPO inferido del nombre (no hay campo tipo; se deduce por palabras clave).
-const TIPO_ORDEN = ["Consolas / Mixers","Line array","Parlantes / Bafles","Subwoofers","Potencias / Amplificadores","Monitores","Sistemas in-ear","Micrófonos","Cajas directas","Mangueras / Stage box","Soportes y pies","Cables y conexionado","Generadores","Otros"];
+const TIPO_ORDEN = ["Consolas / Mixers","Mangueras / Stage box","Line array","Parlantes / Bafles","Subwoofers","Potencias / Amplificadores","Monitores","Sistemas in-ear","Micrófonos","Cajas directas","Soportes y pies","Cables y conexionado","Generadores","Otros"];
 const TIPO_RX = [
   [/consola|mixer|mezclad/i,"Consolas / Mixers"],
   [/generador|grupo elect/i,"Generadores"],
