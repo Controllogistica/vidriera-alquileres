@@ -441,8 +441,8 @@ function App(){
   useEffect(()=>{
     if(!sess) return;
     (async()=>{
-      const {data:pf}=await sb.from("perfiles").select("rol_stock").eq("id",sess.user.id).maybeSingle();
-      setAdmin(pf?.rol_stock==="admin");
+      const {data:pf}=await sb.from("perfiles").select("rol_stock,puede_vidriera").eq("id",sess.user.id).maybeSingle();
+      setAdmin(pf?.rol_stock==="admin" || pf?.puede_vidriera===true);
       const {data:a}=await sb.from("stock_areas").select("id,nombre").order("nombre");
       setAreas(a||[]);
       const {data:t}=await sb.from("alq_tramos").select("*").eq("activo",true).order("orden");
