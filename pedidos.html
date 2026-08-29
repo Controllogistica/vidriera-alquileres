@@ -63,6 +63,19 @@ const PRESU_URL="https://presupuestos-tabiasound.vercel.app";
 const money=n=>n==null||n===""||isNaN(n)?"—":"$"+Number(n).toLocaleString("es-AR",{maximumFractionDigits:0});
 const dmy=s=>{if(!s)return"";const p=String(s).slice(0,10).split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s;};
 const ESTLBL={enviado:"Enviado",confirmado:"Confirmado",rechazado:"Rechazado",cancelado:"Cancelado"};
+// arma link de WhatsApp (asume Argentina si no trae código de país)
+function waLink(tel){
+  var d=(tel||"").replace(/[^0-9]/g,"");
+  if(!d) return null;
+  if(d.indexOf("54")===0) return "https://wa.me/"+d;
+  if(d.indexOf("0")===0) d=d.slice(1);
+  return "https://wa.me/549"+d;
+}
+function mailLink(email,num,nombre){
+  var s=encodeURIComponent("Tabia'S Sound · Pedido de alquiler #"+num);
+  var b=encodeURIComponent("Hola "+(nombre||"")+",\n\n");
+  return "mailto:"+email+"?subject="+s+"&body="+b;
+}
 
 function Login({onIn}){
   const [em,setEm]=useState(""),[pw,setPw]=useState(""),[busy,setBusy]=useState(false),[err,setErr]=useState("");
@@ -168,6 +181,10 @@ function App(){
           <div className="muted" style={{marginBottom:8}}>
             <b style={{color:"var(--ink)"}}>{det.cliente&&det.cliente.nombre}</b>{det.cliente&&det.cliente.empresa?" · "+det.cliente.empresa:""}<br/>
             {det.cliente&&det.cliente.email}{det.cliente&&det.cliente.telefono?" · "+det.cliente.telefono:""}{det.cliente&&det.cliente.cuit?" · CUIT "+det.cliente.cuit:""}
+          </div>
+          <div className="row" style={{gap:8,marginBottom:10}}>
+            {det.cliente&&det.cliente.telefono && <a className="chip" style={{color:"var(--live)",borderColor:"var(--live)"}} href={waLink(det.cliente.telefono)} target="_blank" rel="noopener">💬 Responder por WhatsApp</a>}
+            {det.cliente&&det.cliente.email && <a className="chip" href={mailLink(det.cliente.email, sel.numero, det.cliente.nombre)}>✉️ Responder por email</a>}
           </div>
           <div className="muted">Período: {dmy(det.pedido.fecha_desde)} → {dmy(det.pedido.fecha_hasta)} · {det.pedido.dias} día(s) · {det.pedido.con_logistica?("Logística"+(det.pedido.direccion_entrega?" — "+det.pedido.direccion_entrega:"")):"Retiro en depósito"}</div>
           {det.pedido.observacion && <div className="muted" style={{marginTop:4}}>Obs: {det.pedido.observacion}</div>}
