@@ -119,7 +119,14 @@ function App(){
     setBusy(false);
     if(error||!data||!data.ok){say("No se pudo actualizar");return;}
     say(nuevo==="confirmado"?"Pedido confirmado":nuevo==="rechazado"?"Pedido rechazado":"Actualizado");
-    setSel(null);setDet(null);load1();
+    if(nuevo==="confirmado"){
+      // dejar el cuadro abierto y activar "Generar presupuesto" al toque
+      setSel({...sel,estado:"confirmado"});
+      const {data:d2}=await sb.rpc("alq_pedido_detalle_admin",{p_pedido:sel.id});
+      setDet(d2||null); load1();
+    } else {
+      setSel(null); setDet(null); load1();
+    }
   };
   const genPresu=async()=>{
     if(!sel)return;
