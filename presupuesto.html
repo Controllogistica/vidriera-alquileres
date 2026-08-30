@@ -20,9 +20,9 @@
   textarea{width:100%;background:#14171C;border:1px solid #39424F;color:#E9ECF1;border-radius:8px;padding:10px 12px;font:inherit;min-height:90px;outline:none}
   textarea:focus{border-color:#1FC3B8}
   .center{text-align:center;padding:44px 20px}
-  .done{text-align:center;padding:40px 20px;font-size:18px;line-height:1.5}
-  .done.ok{color:#35D07F}
-  .done.no{color:#FF6B6B}
+  .done{text-align:center;padding:40px 24px;font-size:18px;line-height:1.5;background:#14171C;border:1px solid #262C35;border-radius:12px;margin:24px 0}
+  .done.good{color:#35D07F}
+  .done.bad{color:#FF6B6B}
   .hint{color:#5C6675;font-size:12px;text-align:center;margin-top:8px}
 </style>
 </head>
@@ -40,10 +40,10 @@ function done(kind,txt){ app.innerHTML='<div class="done '+kind+'">'+txt+'</div>
 async function responder(accion,msg){
   app.innerHTML='<p class="center" style="color:#8C95A4">Enviando…</p>';
   var r=await sb.rpc("presupuesto_responder",{p_id:P,p_token:T,p_accion:accion,p_mensaje:msg||null});
-  if(r.error||!r.data||!r.data.ok){ done("no","No pudimos registrar tu respuesta. Probá de nuevo en un momento."); return; }
-  if(accion==="aceptado") done("ok","✓ ¡Presupuesto aceptado!<br>Gracias. Nos comunicamos a la brevedad para coordinar todo.");
-  else if(accion==="rechazado") done("no","Registramos tu respuesta.<br>¡Gracias igual! Cualquier cosa quedamos a disposición.");
-  else done("ok","✓ Recibimos tu consulta.<br>Te respondemos a la brevedad.");
+  if(r.error||!r.data||!r.data.ok){ done("bad","No pudimos registrar tu respuesta. Probá de nuevo en un momento."); return; }
+  if(accion==="aceptado") done("good","✓ ¡Presupuesto aceptado!<br>Gracias. Nos comunicamos a la brevedad para coordinar todo.");
+  else if(accion==="rechazado") done("bad","Registramos tu respuesta.<br>¡Gracias igual! Cualquier cosa quedamos a disposición.");
+  else done("good","✓ Recibimos tu consulta.<br>Te respondemos a la brevedad.");
 }
 
 function pintar(d){
@@ -71,17 +71,17 @@ function pintar(d){
 }
 
 async function load(){
-  if(!P||!T){ done("no","Link inválido."); return; }
+  if(!P||!T){ done("bad","Link inválido."); return; }
   var r=await sb.rpc("presupuesto_publico",{p_id:P,p_token:T});
   var d=r.data;
-  if(r.error||!d||!d.ok){ done("no","No encontramos este presupuesto.<br>Puede que el link no sea válido o haya vencido."); return; }
+  if(r.error||!d||!d.ok){ done("bad","No encontramos este presupuesto.<br>Puede que el link no sea válido o haya vencido."); return; }
   if(d.respuesta){
     var doc='<div class="doc">'+d.html+'</div>';
     var nota = d.respuesta==="aceptado"
-      ? '<div class="done ok">✓ Ya aceptaste este presupuesto.<br>¡Gracias!</div>'
+      ? '<div class="done good">✓ Ya aceptaste este presupuesto.<br>¡Gracias!</div>'
       : d.respuesta==="rechazado"
-      ? '<div class="done no">Registramos que rechazaste este presupuesto.</div>'
-      : '<div class="done ok">Ya nos mandaste una consulta.<br>Te respondemos a la brevedad.</div>';
+      ? '<div class="done bad">Registramos que rechazaste este presupuesto.</div>'
+      : '<div class="done good">Ya nos mandaste una consulta.<br>Te respondemos a la brevedad.</div>';
     app.innerHTML=nota+doc;
     return;
   }
