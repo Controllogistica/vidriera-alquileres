@@ -98,6 +98,7 @@ function App(){
   const [rows,setRows]=useState([]);const [load,setLoad]=useState(false);
   const [sel,setSel]=useState(null);const [det,setDet]=useState(null);
   const [toast,setToast]=useState(null);const [busy,setBusy]=useState(false);
+  const [flete,setFlete]=useState("");const [askSend,setAskSend]=useState(false);
   const say=m=>{setToast(m);setTimeout(()=>setToast(null),2400);};
 
   useEffect(()=>{sb.auth.getSession().then(({data})=>setSess(data.session));
@@ -112,7 +113,7 @@ function App(){
   },[sess,estado]);
   useEffect(()=>{load1();},[load1]);
 
-  const abrir=async(p)=>{setSel(p);setDet(null);
+  const abrir=async(p)=>{setSel(p);setDet(null);setFlete("");setAskSend(false);
     const {data}=await sb.rpc("alq_pedido_detalle_admin",{p_pedido:p.id});setDet(data||null);};
   const setEst=async(nuevo)=>{ if(!sel)return; setBusy(true);
     const {data,error}=await sb.rpc("alq_pedido_set_estado",{p_pedido:sel.id,p_estado:nuevo});
@@ -128,21 +129,33 @@ function App(){
       setSel(null); setDet(null); load1();
     }
   };
-  const genPresu=async()=>{
+  const genPresu=async(mode)=>{ // mode: 'open' | 'send'
     if(!sel)return;
     if(det&&det.presupuesto){ window.open(PRESU_URL+"/?p="+det.presupuesto.id,"_blank","noopener"); return; }
     setBusy(true);
-    const {data,error}=await sb.rpc("alq_pedido_a_presupuesto",{p_pedido:sel.id});
-    setBusy(false);
-    if(error||!data){ say(error&&error.message?error.message:"No se pudo generar el presupuesto"); return; }
-    say("Presupuesto generado");
-    window.open(PRESU_URL+"/?p="+data,"_blank","noopener");
+    const fl = flete===""?null:Number(flete);
+    const {data,error}=await sb.rpc("alq_pedido_a_presupuesto",{p_pedido:sel.id,p_flete:fl});
+    if(error||!data){ setBusy(false); say(error&&error.message?error.message:"No se pudo generar el presupuesto"); return; }
+    const pid=data;
+    if(mode==="send"){
+      const {data:r,error:e2}=await sb.rpc("enviar_presupuesto_mail",{p_id:pid});
+      setBusy(false); setAskSend(false);
+      if(e2){ say((e2.message||"").toLowerCase().indexOf("permiso")>=0?"No tenés permiso de Presupuestos para enviar. Usá 'Abrir en Presupuestos'.":"No se pudo enviar el mail"); }
+      else if(r==="sin_email"){ say("Generado, pero falta el mail del cliente."); window.open(PRESU_URL+"/?p="+pid,"_blank","noopener"); }
+      else { say("✓ Presupuesto enviado al cliente"); }
+    } else {
+      setBusy(false); setAskSend(false);
+      window.open(PRESU_URL+"/?p="+pid,"_blank","noopener");
+    }
     const {data:d2}=await sb.rpc("alq_pedido_detalle_admin",{p_pedido:sel.id});
     setDet(d2||null); load1();
   };
 
   if(!sess) return <Login onIn={()=>{}}/>;
   if(noAdmin) return <div className="empty"><h2>Sin permiso</h2><p>Tu cuenta no tiene permiso para ver los pedidos. Pedile a administración que te active la Vidriera.</p><a className="chip" href="/" style={{marginRight:8}}>← Curaduría</a><button className="chip" onClick={()=>sb.auth.signOut()}>Salir</button></div>;
+
+  const hayCot = !!(det && (det.items||[]).some(i=>!(Number(i.precio_dia)>0)));
+  const fleteN = flete===""?0:(Number(flete)||0);
 
   return (<div>
     <div className="topbar">
@@ -205,19 +218,50 @@ function App(){
           <tfoot><tr><td colSpan={3} className="r"><b>Subtotal</b></td><td className="r"><b>{money(det.pedido.subtotal)} +IVA</b></td></tr></tfoot>
           </table></div>
 
-          <div className="row" style={{marginTop:16,justifyContent:"flex-end",gap:8}}>
+          {!det.presupuesto && sel.estado==="confirmado" && det.pedido.con_logistica &&
+            <div className="row" style={{marginTop:14,gap:10,alignItems:"center",background:"var(--panel-2)",border:"1px solid var(--amber)",borderRadius:10,padding:"10px 12px"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:9,letterSpacing:".12em",textTransform:"uppercase",color:"var(--ink-3)",fontFamily:"var(--mono)"}}>Flete / Logística{det.pedido.direccion_entrega?" — "+det.pedido.direccion_entrega:""}</div>
+                <div style={{fontSize:12,color:"var(--ink-3)"}}>Precio que le pasás al cliente</div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:6,background:"var(--bg)",border:"1px solid var(--amber)",borderRadius:8,padding:"6px 10px"}}>
+                <span style={{color:"var(--amber)",fontFamily:"var(--mono)",fontSize:14}}>$</span>
+                <input inputMode="numeric" placeholder="0" value={flete}
+                       onChange={e=>setFlete(e.target.value.replace(/[^\d]/g,""))}
+                       style={{width:90,background:"transparent",border:0,color:"var(--ink)",fontFamily:"var(--mono)",fontSize:15,textAlign:"right",outline:"none"}}/>
+              </div>
+            </div>}
+
+          <div className="row" style={{marginTop:14,justifyContent:"flex-end",gap:8}}>
             <button className="btn btn-ghost" onClick={()=>{setSel(null);setDet(null);}}>Cerrar</button>
-            {sel.estado!=="rechazado" && <button className="btn btn-no" disabled={busy} onClick={()=>setEst("rechazado")}>Rechazar</button>}
+            {sel.estado!=="rechazado" && !det.presupuesto && <button className="btn btn-no" disabled={busy} onClick={()=>setEst("rechazado")}>Rechazar</button>}
             {sel.estado!=="confirmado" && <button className="btn btn-ok" disabled={busy} onClick={()=>setEst("confirmado")}>✓ Confirmar</button>}
             {det.presupuesto
-              ? <button className="btn btn-primary" onClick={genPresu}>📄 Ver presupuesto #{det.presupuesto.numero}</button>
-              : <button className="btn btn-primary" disabled={busy||sel.estado!=="confirmado"}
-                        title={sel.estado!=="confirmado"?"Primero confirmá el pedido":""}
-                        style={sel.estado!=="confirmado"?{opacity:.5,cursor:"not-allowed"}:{}}
-                        onClick={genPresu}>Generar presupuesto →</button>}
+              ? <button className="btn btn-primary" onClick={()=>genPresu("open")}>📄 Ver presupuesto #{det.presupuesto.numero}</button>
+              : sel.estado==="confirmado" && <>
+                  <button className="btn btn-ghost" disabled={busy} onClick={()=>genPresu("open")}>Abrir en Presupuestos</button>
+                  <button className="btn btn-primary" disabled={busy||hayCot}
+                          title={hayCot?"Tiene ítems a cotizar: abrí Presupuestos para ponerles precio":""}
+                          style={hayCot?{opacity:.5,cursor:"not-allowed"}:{}}
+                          onClick={()=>setAskSend(true)}>Generar y enviar al cliente →</button>
+                </>}
           </div>
           {!det.presupuesto && sel.estado!=="confirmado" && <p className="hint" style={{textAlign:"right",marginBottom:0}}>Confirmá el pedido para poder generar el presupuesto.</p>}
-          {det.presupuesto && <p className="hint" style={{textAlign:"right",marginBottom:0}}>Ya tiene el presupuesto #{det.presupuesto.numero} generado. Editalo y envialo desde Presupuestos.</p>}
+          {!det.presupuesto && sel.estado==="confirmado" && hayCot && <p className="hint" style={{textAlign:"right",marginBottom:0}}>Tiene ítems "a cotizar": abrí Presupuestos para ponerles precio antes de enviar.</p>}
+          {det.presupuesto && <p className="hint" style={{textAlign:"right",marginBottom:0}}>Ya tiene el presupuesto #{det.presupuesto.numero} generado. Editalo y reenvialo desde Presupuestos.</p>}
+
+          {askSend && <div style={{marginTop:14,borderTop:"1px solid var(--line)",paddingTop:14}}>
+            <b style={{fontSize:15}}>¿Enviar presupuesto al cliente?</b>
+            <div className="muted" style={{margin:"6px 0 8px"}}>Se genera y se le manda por mail a <b style={{color:"var(--ink)"}}>{det.cliente&&det.cliente.email}</b>, a tu nombre.</div>
+            <div className="row" style={{justifyContent:"space-between",background:"var(--panel-2)",borderRadius:9,padding:"10px 12px"}}>
+              <span className="muted">Equipos {money(det.pedido.subtotal)}{det.pedido.con_logistica?" + Flete "+money(fleteN):""}</span>
+              <b className="mono">{money(Number(det.pedido.subtotal||0)+(det.pedido.con_logistica?fleteN:0))} <span className="muted">+IVA</span></b>
+            </div>
+            <div className="row" style={{justifyContent:"flex-end",gap:8,marginTop:12}}>
+              <button className="btn btn-ghost" disabled={busy} onClick={()=>setAskSend(false)}>Cancelar</button>
+              <button className="btn btn-ok" disabled={busy} onClick={()=>genPresu("send")}>{busy?"Enviando…":"✓ Enviar ahora"}</button>
+            </div>
+          </div>}
         </>}
       </div>
     </div>}
