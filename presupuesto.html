@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Presupuesto · Tabia'S Sound</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0C0E11;color:#E9ECF1;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px}
+  .wrap{max-width:640px;margin:0 auto;padding:16px 16px 60px}
+  .doc{background:#fff;color:#111;border-radius:12px;overflow:hidden;margin:14px 0}
+  .doc>*{max-width:100%}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:6px 0 10px}
+  .b{border:0;border-radius:10px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+  .ok{background:#1FC3B8;color:#0C0E11}
+  .q{background:#1A1E25;color:#E9ECF1;border:1px solid #39424F}
+  .no{background:#1A1E25;color:#FF6B6B;border:1px solid #FF4D5E}
+  .lead{text-align:center;color:#8C95A4;font-size:14px;margin:2px 0 4px}
+  textarea{width:100%;background:#14171C;border:1px solid #39424F;color:#E9ECF1;border-radius:8px;padding:10px 12px;font:inherit;min-height:90px;outline:none}
+  textarea:focus{border-color:#1FC3B8}
+  .center{text-align:center;padding:44px 20px}
+  .done{text-align:center;padding:40px 20px;font-size:18px;line-height:1.5}
+  .done.ok{color:#35D07F}
+  .done.no{color:#FF6B6B}
+  .hint{color:#5C6675;font-size:12px;text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="app" class="wrap"><p class="center" style="color:#8C95A4">Cargando presupuesto…</p></div>
+<script>
+var SB="https://qnpcrhapvyynwvuljxze.supabase.co";
+var KEY="sb_publishable_Ce1Ig7Z_Jdl0NkdqCv3Cog_vNAo606S";
+var sb=supabase.createClient(SB,KEY,{auth:{persistSession:false}});
+var q=new URLSearchParams(location.search), P=q.get("p"), T=q.get("t");
+var app=document.getElementById("app");
+
+function done(kind,txt){ app.innerHTML='<div class="done '+kind+'">'+txt+'</div>'; }
+
+async function responder(accion,msg){
+  app.innerHTML='<p class="center" style="color:#8C95A4">Enviando…</p>';
+  var r=await sb.rpc("presupuesto_responder",{p_id:P,p_token:T,p_accion:accion,p_mensaje:msg||null});
+  if(r.error||!r.data||!r.data.ok){ done("no","No pudimos registrar tu respuesta. Probá de nuevo en un momento."); return; }
+  if(accion==="aceptado") done("ok","✓ ¡Presupuesto aceptado!<br>Gracias. Nos comunicamos a la brevedad para coordinar todo.");
+  else if(accion==="rechazado") done("no","Registramos tu respuesta.<br>¡Gracias igual! Cualquier cosa quedamos a disposición.");
+  else done("ok","✓ Recibimos tu consulta.<br>Te respondemos a la brevedad.");
+}
+
+function pintar(d){
+  var h='<div class="doc">'+d.html+'</div>';
+  h+='<p class="lead">¿Qué querés hacer con este presupuesto?</p>';
+  h+='<div class="btns">'
+    +'<button class="b ok" id="acc">✓ Aceptar presupuesto</button>'
+    +'<button class="b q" id="con">Tengo una consulta</button>'
+    +'<button class="b no" id="rej">Rechazar</button>'
+    +'</div><div id="extra"></div>'
+    +'<p class="hint">Al aceptar, coordinamos disponibilidad y te confirmamos. No es un pago.</p>';
+  app.innerHTML=h;
+  document.getElementById("acc").onclick=function(){ responder("aceptado"); };
+  document.getElementById("rej").onclick=function(){ responder("rechazado"); };
+  document.getElementById("con").onclick=function(){
+    document.getElementById("extra").innerHTML=
+      '<textarea id="msg" placeholder="Escribí tu consulta (fechas, cambios, dudas…)"></textarea>'
+      +'<div class="btns"><button class="b ok" id="sendc">Enviar consulta</button></div>';
+    document.getElementById("sendc").onclick=function(){
+      var m=(document.getElementById("msg").value||"").trim();
+      if(!m){ document.getElementById("msg").focus(); return; }
+      responder("consulta",m);
+    };
+  };
+}
+
+async function load(){
+  if(!P||!T){ done("no","Link inválido."); return; }
+  var r=await sb.rpc("presupuesto_publico",{p_id:P,p_token:T});
+  var d=r.data;
+  if(r.error||!d||!d.ok){ done("no","No encontramos este presupuesto.<br>Puede que el link no sea válido o haya vencido."); return; }
+  if(d.respuesta){
+    var doc='<div class="doc">'+d.html+'</div>';
+    var nota = d.respuesta==="aceptado"
+      ? '<div class="done ok">✓ Ya aceptaste este presupuesto.<br>¡Gracias!</div>'
+      : d.respuesta==="rechazado"
+      ? '<div class="done no">Registramos que rechazaste este presupuesto.</div>'
+      : '<div class="done ok">Ya nos mandaste una consulta.<br>Te respondemos a la brevedad.</div>';
+    app.innerHTML=nota+doc;
+    return;
+  }
+  pintar(d);
+}
+load();
+</script>
+</body>
+</html>
