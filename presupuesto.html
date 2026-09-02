@@ -24,6 +24,15 @@
   .done.good{color:#35D07F}
   .done.bad{color:#FF6B6B}
   .hint{color:#5C6675;font-size:12px;text-align:center;margin-top:8px}
+  .dlbar{display:flex;justify-content:flex-end;margin:6px 0 0}
+  .dlbtn{background:#1A1E25;color:#E9ECF1;border:1px solid #39424F;border-radius:8px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
+  @media print{
+    body{background:#fff;color:#111}
+    .wrap{max-width:100%;padding:0}
+    .btns,.lead,.hint,.done,#extra,.dlbar,.center,textarea{display:none!important}
+    .doc{margin:0;border-radius:0;border:0}
+    @page{margin:12mm}
+  }
 </style>
 </head>
 <body>
@@ -47,7 +56,8 @@ async function responder(accion,msg){
 }
 
 function pintar(d){
-  var h='<div class="doc">'+d.html+'</div>';
+  var h='<div class="dlbar"><button class="dlbtn" onclick="window.print()">⬇ Descargar / Imprimir</button></div>';
+  h+='<div class="doc">'+d.html+'</div>';
   h+='<p class="lead">¿Qué querés hacer con este presupuesto?</p>';
   h+='<div class="btns">'
     +'<button class="b ok" id="acc">✓ Aceptar presupuesto</button>'
@@ -82,7 +92,7 @@ async function load(){
       : d.respuesta==="rechazado"
       ? '<div class="done bad">Registramos que rechazaste este presupuesto.</div>'
       : '<div class="done good">Ya nos mandaste una consulta.<br>Te respondemos a la brevedad.</div>';
-    app.innerHTML=nota+doc;
+    app.innerHTML=nota+'<div class="dlbar"><button class="dlbtn" onclick="window.print()">⬇ Descargar / Imprimir</button></div>'+doc;
     return;
   }
   pintar(d);
