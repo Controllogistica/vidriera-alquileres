@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Factura · Tabia'S Sound</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0C0E11;color:#E9ECF1;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px}
+  .wrap{max-width:860px;margin:0 auto;padding:16px 16px 60px}
+  .doc{background:#fff;color:#111;border-radius:12px;overflow:hidden;margin:12px 0;padding:24px}
+  .dlbar{display:flex;justify-content:flex-end;margin:6px 0 0}
+  .dlbtn{background:#1FC3B8;color:#0C0E11;border:0;border-radius:8px;padding:11px 18px;font:inherit;font-weight:700;cursor:pointer}
+  .center{text-align:center;padding:44px 20px;color:#8C95A4}
+  .done{text-align:center;padding:40px 24px;font-size:18px;line-height:1.5;background:#14171C;border:1px solid #262C35;border-radius:12px;margin:24px 0;color:#FF6B6B}
+  /* estilos del documento fiscal */
+  .fx{font-family:Arial,Helvetica,sans-serif;color:#111;max-width:820px;margin:0 auto}
+  .fx .hdr{position:relative;border:1px solid #111;display:flex;min-height:92px}
+  .fx .hdr .c{flex:1;padding:10px 14px}
+  .fx .letra{position:absolute;left:50%;top:-1px;transform:translateX(-50%);width:54px;height:58px;border:1px solid #111;background:#fff;text-align:center}
+  .fx .letra .L{font-size:34px;font-weight:800;line-height:42px}.fx .letra .cod{font-size:9px}
+  .fx .rz{font-size:17px;font-weight:800;margin-bottom:6px}.fx .sm{font-size:11px;line-height:1.55}
+  .fx .tt{font-size:20px;font-weight:800}.fx .rc{border:1px solid #111;border-top:0;padding:8px 14px;font-size:11px;line-height:1.7}
+  .fx table.it{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}
+  .fx table.it th{background:#efefef;border:1px solid #bbb;padding:5px 6px;text-align:left}.fx table.it td{border:1px solid #ddd;padding:5px 6px}
+  .fx .it td.r,.fx .it th.r{text-align:right}.fx .it td.d{width:55%}
+  .fx .tot{margin-top:10px;margin-left:auto;width:300px;font-size:12px}.fx .tot td{padding:3px 0}.fx .tot .g td{font-size:15px;font-weight:800;border-top:2px solid #111;padding-top:6px}
+  .fx .qr{display:flex;gap:14px;align-items:center;margin-top:16px;border-top:1px dashed #999;padding-top:12px}
+  .fx .cae{font-size:12px;line-height:1.7}.fx .cae b{font-size:14px}
+  @media print{
+    body{background:#fff;color:#111}
+    .wrap{max-width:100%;padding:0}
+    .dlbar,.center{display:none!important}
+    .doc{margin:0;border-radius:0;padding:0}
+    @page{margin:12mm}
+  }
+</style>
+</head>
+<body>
+<div id="app" class="wrap"><p class="center">Cargando comprobante…</p></div>
+<script>
+var SB="https://qnpcrhapvyynwvuljxze.supabase.co";
+var KEY="sb_publishable_Ce1Ig7Z_Jdl0NkdqCv3Cog_vNAo606S";
+var sb=supabase.createClient(SB,KEY,{auth:{persistSession:false}});
+var q=new URLSearchParams(location.search), C=q.get("c"), T=q.get("t");
+var app=document.getElementById("app");
+var TS_LOGO="https://qnpcrhapvyynwvuljxze.supabase.co/storage/v1/object/public/gestion/branding/pres-logo.jpg";
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function money(n){ return '$ '+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function dmy(s){ if(!s) return ''; var p=String(s).slice(0,10).split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):s; }
+function bad(t){ app.innerHTML='<div class="done">'+t+'</div>'; }
+
+function renderFiscal(d){
+  var comp=d.comp, cli=d.cli||{}, emisor=d.emisor||{}, items=d.items||[], asoc=d.asoc, cuenta=d.cuenta;
+  var fecha=dmy(comp.fecha);
+  var ct=Number(comp.afip_cbte_tipo||0);
+  var esNC=[3,8,13].indexOf(ct)>-1, esND=[2,7,12].indexOf(ct)>-1;
+  var letra=([1,2,3].indexOf(ct)>-1)?'A':([6,7,8].indexOf(ct)>-1)?'B':([11,12,13].indexOf(ct)>-1)?'C':((((comp.tipo_afip||'').match(/\b([ABC])\b/))||[])[1]||'A');
+  var codMap={1:'01',2:'02',3:'03',6:'06',7:'07',8:'08',11:'11',12:'12',13:'13'};
+  var cod=codMap[ct]||((letra==='B')?'06':'01');
+  var docTitle=esNC?'NOTA DE CRÉDITO':(esND?'NOTA DE DÉBITO':'FACTURA');
+  var asocLine=(asoc&&asoc.afip_nro)?('Comprobante asociado: '+esc(asoc.tipo_afip||'Factura')+' '+String(asoc.afip_pv||'').padStart(4,'0')+'-'+String(asoc.afip_nro||'').padStart(8,'0')):'';
+  var pvnro='Punto de Venta: '+String(comp.afip_pv||emisor.punto_venta||'').padStart(4,'0')+'   Comp. Nro: '+String(comp.afip_nro||'').padStart(8,'0');
+  var cuitEmi=String(emisor.cuit||'').replace(/(\d{2})(\d{8})(\d)/,'$1-$2-$3');
+  var cuitCli=(cli&&cli.cuit?String(cli.cuit).replace(/\D/g,''):''); cuitCli=cuitCli.replace(/(\d{2})(\d{8})(\d)/,'$1-$2-$3');
+  var cliName=(cli&&(cli.razon_social||cli.nombre))||'';
+
+  var qrImg='';
+  if(comp.afip_qr){ try{ var _q=window.qrcode(0,'M'); _q.addData(comp.afip_qr); _q.make(); qrImg='<img src="'+_q.createDataURL(4,4)+'" style="width:130px;height:130px;image-rendering:pixelated">'; }catch(e){} }
+
+  var bankHtml='';
+  if(cuenta && cuenta.mostrar_en_factura!==false){
+    bankHtml='<div style="margin-top:14px;border:1px solid #ddd;border-radius:6px;padding:8px 12px;font-size:11px;background:#fafafa"><b>Datos para el pago:</b> '+esc(cuenta.nombre)+(cuenta.cbu?('<br>CBU: <b>'+esc(cuenta.cbu)+'</b>'):'')+(cuenta.alias?(' &nbsp; Alias: <b>'+esc(cuenta.alias)+'</b>'):'')+(cuenta.numero_cuenta?('<br>Cuenta: '+esc(cuenta.numero_cuenta)):'')+(cuenta.titular?('<br>Titular: '+esc(cuenta.titular)+(cuenta.cuit?(' &nbsp; CUIT '+esc(cuenta.cuit)):'')):'')+'</div>';
+  }
+
+  var itemsF=items.length?items.map(function(i){
+    return '<tr><td class="d">'+esc(i.descripcion||'')+'</td><td class="r">'+Number(i.cantidad||1)+'</td><td class="r">'+money(i.precio)+'</td><td class="r">'+money(i.subtotal)+'</td></tr>';
+  }).join(''):'<tr><td class="d">'+esc(comp.concepto||'Servicios')+'</td><td class="r">1</td><td class="r">'+money(comp.neto)+'</td><td class="r">'+money(comp.neto)+'</td></tr>';
+  var ivaRowF=Number(comp.iva_monto)>0?('<tr><td>IVA '+Number(comp.iva_pct||21)+'%:</td><td class="r">'+money(comp.iva_monto)+'</td></tr>'):'';
+
+  return '<div class="fx">'+
+    '<div style="text-align:center;margin-bottom:8px"><img src="'+TS_LOGO+'" style="height:40px"></div>'+
+    '<div class="hdr"><div class="letra"><div class="L">'+letra+'</div><div class="cod">COD. '+cod+'</div></div>'+
+      '<div class="c l"><div class="rz">'+esc(emisor.razon_social||'NEW GATE S.R.L.')+'</div>'+
+        '<div class="sm"><b>Razón Social:</b> '+esc(emisor.razon_social||'')+'<br><b>Domicilio:</b> '+esc(emisor.domicilio||'')+'<br><b>Condición frente al IVA:</b> '+esc(emisor.condicion_iva||'')+'</div></div>'+
+      '<div class="c r" style="text-align:right"><div class="tt">'+docTitle+' '+letra+'</div>'+
+        '<div class="sm">'+pvnro+'<br><b>Fecha de Emisión:</b> '+fecha+'<br><b>CUIT:</b> '+esc(cuitEmi)+'<br><b>Ingresos Brutos:</b> '+esc(emisor.iibb||'—')+'<br><b>Inicio de Actividades:</b> '+esc(emisor.inicio_actividades||'—')+'</div></div>'+
+    '</div>'+
+    '<div class="rc"><b>CUIT:</b> '+esc(cuitCli||'—')+' &nbsp;&nbsp; <b>Cliente:</b> '+esc(cliName)+'<br><b>Condición frente al IVA:</b> '+esc((cli&&cli.afip)||'—')+' &nbsp;&nbsp; <b>Condición de venta:</b> Cuenta Corriente'+(asocLine?('<br><b>'+asocLine+'</b>'):'')+'</div>'+
+    '<table class="it"><thead><tr><th class="d">Descripción</th><th class="r">Cant.</th><th class="r">P. Unit.</th><th class="r">Subtotal</th></tr></thead><tbody>'+itemsF+'</tbody></table>'+
+    '<table class="tot"><tr><td>Importe Neto Gravado:</td><td class="r">'+money(comp.neto)+'</td></tr>'+ivaRowF+'<tr class="g"><td>Importe Total:</td><td class="r">'+money(comp.total)+'</td></tr></table>'+
+    bankHtml+
+    '<div class="qr">'+qrImg+'<div class="cae"><b>Comprobante Autorizado</b><br>CAE N°: <b>'+esc(comp.cae)+'</b><br>Fecha Vto. de CAE: '+dmy(comp.cae_vto)+'</div></div>'+
+    '<div style="margin-top:10px;font-size:10px;color:#888">'+esc(emisor.razon_social||'New Gate S.R.L.')+' · Tabia’S Sound</div>'+
+  '</div>';
+}
+
+function renderInterno(d){
+  var comp=d.comp, cli=d.cli||{}, items=d.items||[];
+  var fecha=dmy(comp.fecha);
+  var cliName=(cli&&(cli.razon_social||cli.nombre))||'';
+  var rows=items.length?items.map(function(i){
+    return '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">'+Number(i.cantidad||1)+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #eee">'+esc(i.descripcion||'')+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">'+money(i.subtotal)+'</td></tr>';
+  }).join(''):'<tr><td colspan="3" style="padding:8px">'+esc(comp.concepto||'')+'</td></tr>';
+  var ivaRow=Number(comp.iva_monto)>0?('<tr><td>IVA '+Number(comp.iva_pct)+'%</td><td style="text-align:right">'+money(comp.iva_monto)+'</td></tr>'):'';
+  return '<div style="font-family:system-ui,Arial,sans-serif;color:#111;max-width:800px;margin:0 auto">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #C0392B;padding-bottom:12px"><img style="height:56px" src="'+TS_LOGO+'"><div style="text-align:right"><div style="font-size:12px;color:#888">COMPROBANTE INTERNO</div><div style="font-size:22px;font-weight:800;color:#C0392B">N° '+comp.numero+'</div><div style="font-size:12px">Fecha: '+fecha+'</div></div></div>'+
+    '<div style="margin:14px 0;font-size:14px;line-height:1.5"><b>Cliente:</b> '+esc(cliName)+(cli&&cli.cuit?(' · CUIT '+esc(cli.cuit)):'')+(cli&&cli.afip?('<br><span style="color:#666">'+esc(cli.afip)+'</span>'):'')+'</div>'+
+    '<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:14px"><thead><tr><th style="text-align:left;background:#111;color:#fff;padding:6px 8px;font-size:12px;width:50px">Cant.</th><th style="text-align:left;background:#111;color:#fff;padding:6px 8px;font-size:12px">Descripción</th><th style="text-align:right;background:#111;color:#fff;padding:6px 8px;font-size:12px;width:120px">Importe</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<table style="margin-top:12px;width:280px;margin-left:auto;font-size:14px"><tr><td>Neto</td><td style="text-align:right">'+money(comp.neto)+'</td></tr>'+ivaRow+'<tr style="font-size:18px;font-weight:800;border-top:2px solid #111"><td>Total</td><td style="text-align:right">'+money(comp.total)+'</td></tr></table>'+
+    '<div style="margin-top:26px;font-size:11px;color:#888;border-top:1px solid #ddd;padding-top:8px">Comprobante interno · No válido como factura fiscal (ARCA/AFIP). Tabia’S Sound / New Gate S.R.L.</div>'+
+  '</div>';
+}
+
+async function load(){
+  if(!C||!T){ bad('Link inválido.'); return; }
+  var r=await sb.rpc('fac_factura_publica',{p_id:C,p_token:T});
+  var d=r.data;
+  if(r.error||!d||!d.ok){ bad('No encontramos este comprobante.<br>Puede que el link no sea válido.'); return; }
+  var body=(d.comp&&d.comp.cae)?renderFiscal(d):renderInterno(d);
+  app.innerHTML='<div class="dlbar"><button class="dlbtn" onclick="window.print()">⬇ Descargar / Imprimir</button></div><div class="doc">'+body+'</div>';
+}
+load();
+</script>
+</body>
+</html>
