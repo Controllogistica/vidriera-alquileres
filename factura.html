@@ -65,8 +65,8 @@ function renderFiscal(d){
   var asocLine=(asoc&&asoc.afip_nro)?('Comprobante asociado: '+esc(asoc.tipo_afip||'Factura')+' '+String(asoc.afip_pv||'').padStart(4,'0')+'-'+String(asoc.afip_nro||'').padStart(8,'0')):'';
   var pvnro='Punto de Venta: '+String(comp.afip_pv||emisor.punto_venta||'').padStart(4,'0')+'   Comp. Nro: '+String(comp.afip_nro||'').padStart(8,'0');
   var cuitEmi=String(emisor.cuit||'').replace(/(\d{2})(\d{8})(\d)/,'$1-$2-$3');
-  var cuitCli=(cli&&cli.cuit?String(cli.cuit).replace(/\D/g,''):''); cuitCli=cuitCli.replace(/(\d{2})(\d{8})(\d)/,'$1-$2-$3');
-  var cliName=(cli&&(cli.razon_social||cli.nombre))||'';
+  var cuitCli=String((comp.receptor_cuit||(cli&&cli.cuit)||'')).replace(/\D/g,''); cuitCli=cuitCli.replace(/(\d{2})(\d{8})(\d)/,'$1-$2-$3');
+  var cliName=comp.receptor_nombre||(cli&&(cli.razon_social||cli.nombre))||'';
 
   var qrImg='';
   if(comp.afip_qr){ try{ var _q=window.qrcode(0,'M'); _q.addData(comp.afip_qr); _q.make(); qrImg='<img src="'+_q.createDataURL(4,4)+'" style="width:130px;height:130px;image-rendering:pixelated">'; }catch(e){} }
@@ -101,7 +101,8 @@ function renderFiscal(d){
 function renderInterno(d){
   var comp=d.comp, cli=d.cli||{}, items=d.items||[];
   var fecha=dmy(comp.fecha);
-  var cliName=(cli&&(cli.razon_social||cli.nombre))||'';
+  var cliName=comp.receptor_nombre||(cli&&(cli.razon_social||cli.nombre))||'';
+  var _rc=comp.receptor_cuit||(cli&&cli.cuit)||'';
   var rows=items.length?items.map(function(i){
     return '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">'+Number(i.cantidad||1)+'</td>'+
       '<td style="padding:6px 8px;border-bottom:1px solid #eee">'+esc(i.descripcion||'')+'</td>'+
@@ -110,7 +111,7 @@ function renderInterno(d){
   var ivaRow=Number(comp.iva_monto)>0?('<tr><td>IVA '+Number(comp.iva_pct)+'%</td><td style="text-align:right">'+money(comp.iva_monto)+'</td></tr>'):'';
   return '<div style="font-family:system-ui,Arial,sans-serif;color:#111;max-width:800px;margin:0 auto">'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #C0392B;padding-bottom:12px"><img style="height:56px" src="'+TS_LOGO+'"><div style="text-align:right"><div style="font-size:12px;color:#888">COMPROBANTE INTERNO</div><div style="font-size:22px;font-weight:800;color:#C0392B">N° '+comp.numero+'</div><div style="font-size:12px">Fecha: '+fecha+'</div></div></div>'+
-    '<div style="margin:14px 0;font-size:14px;line-height:1.5"><b>Cliente:</b> '+esc(cliName)+(cli&&cli.cuit?(' · CUIT '+esc(cli.cuit)):'')+(cli&&cli.afip?('<br><span style="color:#666">'+esc(cli.afip)+'</span>'):'')+'</div>'+
+    '<div style="margin:14px 0;font-size:14px;line-height:1.5"><b>Cliente:</b> '+esc(cliName)+(_rc?(' · CUIT '+esc(_rc)):'')+'</div>'+
     '<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:14px"><thead><tr><th style="text-align:left;background:#111;color:#fff;padding:6px 8px;font-size:12px;width:50px">Cant.</th><th style="text-align:left;background:#111;color:#fff;padding:6px 8px;font-size:12px">Descripción</th><th style="text-align:right;background:#111;color:#fff;padding:6px 8px;font-size:12px;width:120px">Importe</th></tr></thead><tbody>'+rows+'</tbody></table>'+
     '<table style="margin-top:12px;width:280px;margin-left:auto;font-size:14px"><tr><td>Neto</td><td style="text-align:right">'+money(comp.neto)+'</td></tr>'+ivaRow+'<tr style="font-size:18px;font-weight:800;border-top:2px solid #111"><td>Total</td><td style="text-align:right">'+money(comp.total)+'</td></tr></table>'+
     '<div style="margin-top:26px;font-size:11px;color:#888;border-top:1px solid #ddd;padding-top:8px">Comprobante interno · No válido como factura fiscal (ARCA/AFIP). Tabia’S Sound / New Gate S.R.L.</div>'+
