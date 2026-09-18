@@ -112,10 +112,10 @@ const TIPO_RX = [
   [/canon|cable|xlr|powercon|speakon|alargue|zapatilla|pasacable|tensi[oó]n|ficha|conector|placa dante/i,"Cables y conexionado"],
   [/\bcaja\b|parlante|bafle|full ?range|caja ac[uú]stica|speaker|sistema de sonido|nexo/i,"Parlantes / Bafles"],
 ];
-function tipoDe(nombre){ const s=(nombre||"").toLowerCase(); for(const pair of TIPO_RX){ if(pair[0].test(s)) return pair[1]; } return "Otros"; }
+function tipoDe(p){ if(p&&typeof p==="object"&&p.subcategoria&&String(p.subcategoria).trim()) return String(p.subcategoria).trim(); const s=((typeof p==="string"?p:(p&&p.nombre))||"").toLowerCase(); for(const pair of TIPO_RX){ if(pair[0].test(s)) return pair[1]; } return "Otros"; }
 function agrupar(rows){
   const map={};
-  rows.forEach(p=>{ const t=tipoDe(p.nombre); (map[t]=map[t]||[]).push(p); });
+  rows.forEach(p=>{ const t=tipoDe(p); (map[t]=map[t]||[]).push(p); });
   Object.keys(map).forEach(t=> map[t].sort((a,b)=>{
     const pa=a.precio_alquiler>0?1:0, pb=b.precio_alquiler>0?1:0;
     if(pa!==pb) return pb-pa;
