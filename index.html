@@ -305,6 +305,7 @@ function Rack({pct}){
 }
 
 /* ---------- Fila producto ---------- */
+const SUBCATS = {"Sonido":["Consolas / Mixers","Mangueras / Stage box","Line array","Parlantes / Bafles","Subwoofers","Potencias / Amplificadores","Monitores","Sistemas in-ear","Micrófonos","Cajas directas","Soportes y pies","Cables y conexionado","Otros"]};
 function Strip({p, tramos, onSave, onPhoto, uploading}){
   const [precio,setPrecio]=useState(p.precio_alquiler ?? "");
   const [open,setOpen]=useState(false);
@@ -361,6 +362,14 @@ function Strip({p, tramos, onSave, onPhoto, uploading}){
           {tramos.length>0 && p.precio_alquiler>0 &&
             <span style={{color:"var(--amber)",cursor:"pointer"}}
                   onClick={()=>setOpen(o=>!o)}>{open?"▾ tramos":"▸ tramos"}</span>}
+        </div>
+        <div style={{marginTop:4}}>
+          {(SUBCATS[p.area]||[]).length
+            ? <select value={p.subcategoria||""} onChange={e=>onSave(p.id,{subcategoria:e.target.value||null})} style={{fontSize:12,padding:"3px 6px",borderRadius:6,maxWidth:220}}>
+                <option value="">Subcategoría: (auto)</option>
+                {SUBCATS[p.area].map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            : <input defaultValue={p.subcategoria||""} placeholder="Subcategoría (auto)" onBlur={e=>{const v=e.target.value.trim(); if(v!==(p.subcategoria||"")) onSave(p.id,{subcategoria:v||null});}} style={{fontSize:12,padding:"3px 6px",borderRadius:6,maxWidth:220}}/>}
         </div>
       </div>
 
@@ -464,7 +473,7 @@ function App(){
   const loadRows = useCallback(async()=>{
     setLoad(true);
     let sel = sb.from("alq_catalogo")
-      .select("id,nombre,codigo_producto,area_id,area,tipo_control,stock_real,imagen_url,precio_alquiler,visible_marketplace,listo_para_publicar",{count:"exact"})
+      .select("id,nombre,codigo_producto,area_id,area,tipo_control,stock_real,imagen_url,precio_alquiler,visible_marketplace,listo_para_publicar,subcategoria",{count:"exact"})
       .eq("archivado",false);
     if(area) sel=sel.eq("area_id",area);
     if(q.trim()) sel=sel.or(`nombre.ilike.%${q.trim()}%,codigo_producto.ilike.%${q.trim()}%`);
