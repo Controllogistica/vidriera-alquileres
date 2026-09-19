@@ -307,6 +307,8 @@ function Rack({pct}){
 /* ---------- Fila producto ---------- */
 const SUBCATS = {"Sonido":["Consolas / Mixers","Mangueras / Stage box","Line array","Parlantes / Bafles","Subwoofers","Potencias / Amplificadores","Monitores","Sistemas in-ear","Micrófonos","Cajas directas","Soportes y pies","Cables y conexionado","Otros"]};
 function _scId(a){var id=String(a||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");return "sc-"+(id||"x");}
+function _normSub(s){return String(s||"").trim().replace(/\s+/g," ").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");}
+function _canonSub(v,list){v=String(v||"").trim().replace(/\s+/g," ");if(!v)return "";var nv=_normSub(v);for(var i=0;i<(list||[]).length;i++){if(_normSub(list[i])===nv)return list[i];}return v;}
 function Strip({p, tramos, onSave, onPhoto, uploading, subSugg}){
   const [precio,setPrecio]=useState(p.precio_alquiler ?? "");
   const [open,setOpen]=useState(false);
@@ -366,7 +368,7 @@ function Strip({p, tramos, onSave, onPhoto, uploading, subSugg}){
         </div>
         <div style={{marginTop:4}}>
           <input list={_scId(p.area)+"-"+p.id} defaultValue={p.subcategoria||""} placeholder="Subcategoría — escribí o elegí"
-                 onBlur={e=>{const v=e.target.value.trim(); if(v!==(p.subcategoria||"")) onSave(p.id,{subcategoria:v||null});}}
+                 onBlur={e=>{var list=[].concat(SUBCATS[p.area]||[], (subSugg&&subSugg[p.area])||[]); var v=_canonSub(e.target.value,list); if(v&&v!==e.target.value.trim())e.target.value=v; if(v!==(p.subcategoria||"")) onSave(p.id,{subcategoria:v||null});}}
                  style={{fontSize:12,padding:"3px 6px",borderRadius:6,maxWidth:260,width:"100%",background:"var(--panel-2)",color:"var(--ink)",border:"1px solid var(--line)"}}/>
           <datalist id={_scId(p.area)+"-"+p.id}>
             {Array.from(new Set([].concat(SUBCATS[p.area]||[], (subSugg&&subSugg[p.area])||[]))).map(s=><option key={s} value={s}/>)}
@@ -508,7 +510,21 @@ function App(){
     }));   // optimista
     const {error}=await sb.from("stock_productos").update(patch).eq("id",id);
     if(error){ say("No se pudo guardar. ¿Tenés permisos de administrador?","bad"); loadRows(); }
-    else { say("Guardado","good"); loadStats(); }
+    else { say("Guardado","good"); loadStats();
+      if(Object.prototype.hasOwnProperty.call(patch,"subcategoria") && patch.subcategoria){
+        var _r=rows.find(function(x){return x.id===id;}); var _ar=_r&&_r.area, _v=patch.subcategoria;
+        if(_ar){ setSubSugg(function(m){var arr=(m[_ar]||[]).slice(); if(!arr.some(function(x){return _normSub(x)===_normSub(_v);}))arr.push(_v); arr.sort(function(a,b){return a.localeCompare(b,"es");}); return Object.assign({},m,{[_ar]:arr});}); }
+      }
+    }
+  };
+  const renameSubcat = async(areaName,areaId,oldv)=>{
+    var nv=window.prompt("Renombrar subcategoría (cambia en TODOS los productos de "+areaName+" que la tengan):", oldv);
+    if(nv===null) return; nv=String(nv).trim().replace(/\s+/g," ");
+    if(!nv||nv===oldv){ return; }
+    const {error}=await sb.from("stock_productos").update({subcategoria:nv}).eq("area_id",areaId).eq("subcategoria",oldv);
+    if(error){ say("No se pudo renombrar. ¿Permisos de admin?","bad"); return; }
+    setSubSugg(function(m){var arr=(m[areaName]||[]).filter(function(x){return x!==oldv;}); if(!arr.some(function(x){return _normSub(x)===_normSub(nv);}))arr.push(nv); arr.sort(function(a,b){return a.localeCompare(b,"es");}); return Object.assign({},m,{[areaName]:arr});});
+    loadRows(); say("Subcategoría actualizada en todos los productos","good");
   };
 
   const upload = async(p,file,err)=>{
@@ -540,6 +556,7 @@ function App(){
   const globalOk  = Object.values(stats).reduce((a,s)=>a+s.ok,0);
   const pct = globalTot? Math.round(globalOk/globalTot*100):0;
   const pages = Math.ceil(total/PAGE);
+  const areaName = area? ((areas.find(function(a){return a.id===area;})||{}).nombre||null) : null;
 
   return (
     <div>
@@ -581,6 +598,17 @@ function App(){
                       onClick={()=>setF(v=>({...v,[k]:!v[k]}))}>{l}</button>
             ))}
           </div>
+          {area && (subSugg[areaName]||[]).length>0 && <>
+            <h3>Subcategorías</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {(subSugg[areaName]||[]).map(function(sc){return (
+                <div key={sc} style={{display:"flex",alignItems:"center",gap:6,justifyContent:"space-between"}}>
+                  <span style={{fontSize:12,color:"var(--ink-2)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sc}</span>
+                  <button className="chip" style={{padding:"2px 8px",fontSize:11,flex:"none"}} title="Renombrar en todos los productos del área" onClick={function(){renameSubcat(areaName,area,sc);}}>✎</button>
+                </div>
+              );})}
+            </div>
+          </>}
         </aside>
 
         <main className="main">
