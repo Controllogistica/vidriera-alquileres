@@ -77,8 +77,12 @@ function renderFiscal(d){
   }
 
   var itemsF=items.length?items.map(function(i){
-    return '<tr><td class="d">'+esc(i.descripcion||'')+'</td><td class="r">'+Number(i.cantidad||1)+'</td><td class="r">'+money(i.precio)+'</td><td class="r">'+money(i.subtotal)+'</td></tr>';
+    if(i.tipo==='area'){ return '<tr><td colspan="4" style="font-weight:700;background:#f0f4f5">'+esc(i.descripcion||'')+'</td></tr>'; }
+    if(i.tipo==='subtotal'){ return '<tr><td colspan="3" class="r" style="font-weight:700">'+esc(i.descripcion||'')+'</td><td class="r" style="font-weight:700">'+money(i.subtotal)+'</td></tr>'; }
+    if(i.tipo==='nota'){ return '<tr><td colspan="4" style="font-style:italic;color:#555">'+esc(i.descripcion||'')+'</td></tr>'; }
+    return '<tr><td class="d" style="padding-left:16px">'+esc(i.descripcion||'')+'</td><td class="r">'+Number(i.cantidad||1)+'</td><td class="r">'+money(i.precio)+'</td><td class="r">'+money(i.subtotal)+'</td></tr>';
   }).join(''):'<tr><td class="d">'+esc(comp.concepto||'Servicios')+'</td><td class="r">1</td><td class="r">'+money(comp.neto)+'</td><td class="r">'+money(comp.neto)+'</td></tr>';
+  var oriF=((comp.origen)?('<br><b>Presupuesto N°:</b> '+esc(comp.origen)):'')+((comp.referencia)?(' &nbsp;&nbsp; <b>Referencia:</b> '+esc(comp.referencia)):'');
   var ivaRowF=Number(comp.iva_monto)>0?('<tr><td>IVA '+Number(comp.iva_pct||21)+'%:</td><td class="r">'+money(comp.iva_monto)+'</td></tr>'):'';
 
   return '<div class="fx">'+
@@ -89,7 +93,7 @@ function renderFiscal(d){
       '<div class="c r" style="text-align:right"><div class="tt">'+docTitle+' '+letra+'</div>'+
         '<div class="sm">'+pvnro+'<br><b>Fecha de Emisión:</b> '+fecha+'<br><b>CUIT:</b> '+esc(cuitEmi)+'<br><b>Ingresos Brutos:</b> '+esc(emisor.iibb||'—')+'<br><b>Inicio de Actividades:</b> '+esc(emisor.inicio_actividades||'—')+'</div></div>'+
     '</div>'+
-    '<div class="rc"><b>CUIT:</b> '+esc(cuitCli||'—')+' &nbsp;&nbsp; <b>Cliente:</b> '+esc(cliName)+'<br><b>Condición frente al IVA:</b> '+esc((cli&&cli.afip)||'—')+' &nbsp;&nbsp; <b>Condición de venta:</b> Cuenta Corriente'+(asocLine?('<br><b>'+asocLine+'</b>'):'')+'</div>'+
+    '<div class="rc"><b>CUIT:</b> '+esc(cuitCli||'—')+' &nbsp;&nbsp; <b>Cliente:</b> '+esc(cliName)+'<br><b>Condición frente al IVA:</b> '+esc((cli&&cli.afip)||'—')+' &nbsp;&nbsp; <b>Condición de venta:</b> Cuenta Corriente'+oriF+(asocLine?('<br><b>'+asocLine+'</b>'):'')+'</div>'+
     '<table class="it"><thead><tr><th class="d">Descripción</th><th class="r">Cant.</th><th class="r">P. Unit.</th><th class="r">Subtotal</th></tr></thead><tbody>'+itemsF+'</tbody></table>'+
     '<table class="tot"><tr><td>Importe Neto Gravado:</td><td class="r">'+money(comp.neto)+'</td></tr>'+ivaRowF+'<tr class="g"><td>Importe Total:</td><td class="r">'+money(comp.total)+'</td></tr></table>'+
     bankHtml+
@@ -104,14 +108,18 @@ function renderInterno(d){
   var cliName=comp.receptor_nombre||(cli&&(cli.razon_social||cli.nombre))||'';
   var _rc=comp.receptor_cuit||(cli&&cli.cuit)||'';
   var rows=items.length?items.map(function(i){
+    if(i.tipo==='area'){ return '<tr><td colspan="3" style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:700;background:#f0f4f5">'+esc(i.descripcion||'')+'</td></tr>'; }
+    if(i.tipo==='subtotal'){ return '<tr><td colspan="2" style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:700">'+esc(i.descripcion||'')+'</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:700">'+money(i.subtotal)+'</td></tr>'; }
+    if(i.tipo==='nota'){ return '<tr><td colspan="3" style="padding:6px 8px;border-bottom:1px solid #eee;font-style:italic;color:#555">'+esc(i.descripcion||'')+'</td></tr>'; }
     return '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">'+Number(i.cantidad||1)+'</td>'+
-      '<td style="padding:6px 8px;border-bottom:1px solid #eee">'+esc(i.descripcion||'')+'</td>'+
+      '<td style="padding:6px 8px 6px 20px;border-bottom:1px solid #eee">'+esc(i.descripcion||'')+'</td>'+
       '<td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">'+money(i.subtotal)+'</td></tr>';
   }).join(''):'<tr><td colspan="3" style="padding:8px">'+esc(comp.concepto||'')+'</td></tr>';
+  var oriI=((comp.origen)?('<br><b>Presupuesto N°:</b> '+esc(comp.origen)):'')+((comp.referencia)?(' · <b>Referencia:</b> '+esc(comp.referencia)):'');
   var ivaRow=Number(comp.iva_monto)>0?('<tr><td>IVA '+Number(comp.iva_pct)+'%</td><td style="text-align:right">'+money(comp.iva_monto)+'</td></tr>'):'';
   return '<div style="font-family:system-ui,Arial,sans-serif;color:#111;max-width:800px;margin:0 auto">'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #C0392B;padding-bottom:12px"><img style="height:56px" src="'+TS_LOGO+'"><div style="text-align:right"><div style="font-size:12px;color:#888">COMPROBANTE INTERNO</div><div style="font-size:22px;font-weight:800;color:#C0392B">N° '+comp.numero+'</div><div style="font-size:12px">Fecha: '+fecha+'</div></div></div>'+
-    '<div style="margin:14px 0;font-size:14px;line-height:1.5"><b>Cliente:</b> '+esc(cliName)+(_rc?(' · CUIT '+esc(_rc)):'')+'</div>'+
+    '<div style="margin:14px 0;font-size:14px;line-height:1.5"><b>Cliente:</b> '+esc(cliName)+(_rc?(' · CUIT '+esc(_rc)):'')+oriI+'</div>'+
     '<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:14px"><thead><tr><th style="text-align:left;background:#111;color:#fff;padding:6px 8px;font-size:12px;width:50px">Cant.</th><th style="text-align:left;background:#111;color:#fff;padding:6px 8px;font-size:12px">Descripción</th><th style="text-align:right;background:#111;color:#fff;padding:6px 8px;font-size:12px;width:120px">Importe</th></tr></thead><tbody>'+rows+'</tbody></table>'+
     '<table style="margin-top:12px;width:280px;margin-left:auto;font-size:14px"><tr><td>Neto</td><td style="text-align:right">'+money(comp.neto)+'</td></tr>'+ivaRow+'<tr style="font-size:18px;font-weight:800;border-top:2px solid #111"><td>Total</td><td style="text-align:right">'+money(comp.total)+'</td></tr></table>'+
     '<div style="margin-top:26px;font-size:11px;color:#888;border-top:1px solid #ddd;padding-top:8px">Comprobante interno · No válido como factura fiscal (ARCA/AFIP). Tabia’S Sound / New Gate S.R.L.</div>'+
