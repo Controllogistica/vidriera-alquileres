@@ -55,14 +55,14 @@ function bad(t){ app.innerHTML='<div class="done">'+t+'</div>'; }
 
 /* Nivel de precio: ítems SIEMPRE visibles; el nivel decide qué precios se muestran (null => todo). */
 function nivFlags(comp){ var lvl=(comp.nivel==null?2:Number(comp.nivel)); return {sp:(comp.nivel==null||lvl>=2), ss:(comp.nivel==null||lvl>=1)}; }
-function arcaHead(sp){ return sp?'<tr><th class="d">Descripción</th><th class="r">Cant.</th><th class="r">P. Unit.</th><th class="r">Subtotal</th></tr>':'<tr><th class="d">Descripción</th><th class="r">Cant.</th></tr>'; }
+function arcaHead(sp){ return sp?'<tr><th class="d">Descripción</th><th class="r">Cant.</th><th class="r">P. Unit.</th><th class="r">Subtotal</th></tr>':'<tr><th class="r" style="width:60px">Cant.</th><th class="d">Descripción</th></tr>'; }
 function arcaRows(comp,items,sp,ss){
-  if(!items.length){ return sp?('<tr><td class="d">'+esc(comp.concepto||'Servicios')+'</td><td class="r">1</td><td class="r">'+money(comp.neto)+'</td><td class="r">'+money(comp.neto)+'</td></tr>'):('<tr><td class="d">'+esc(comp.concepto||'Servicios')+'</td><td class="r">1</td></tr>'); }
+  if(!items.length){ return sp?('<tr><td class="d">'+esc(comp.concepto||'Servicios')+'</td><td class="r">1</td><td class="r">'+money(comp.neto)+'</td><td class="r">'+money(comp.neto)+'</td></tr>'):('<tr><td class="r">1</td><td class="d">'+esc(comp.concepto||'Servicios')+'</td></tr>'); }
   return items.map(function(i){
     if(i.tipo==='area'){ return '<tr><td colspan="'+(sp?4:2)+'" style="font-weight:700;background:#f0f4f5">'+esc(i.descripcion||'')+'</td></tr>'; }
     if(i.tipo==='subtotal'){ if(!ss) return ''; return sp?('<tr><td colspan="3" class="r" style="font-weight:700">'+esc(i.descripcion||'')+'</td><td class="r" style="font-weight:700">'+money(i.subtotal)+'</td></tr>'):('<tr><td colspan="2" class="r" style="font-weight:700">'+esc(i.descripcion||'')+': '+money(i.subtotal)+'</td></tr>'); }
     if(i.tipo==='nota'){ return '<tr><td colspan="'+(sp?4:2)+'" style="font-style:italic;color:#555">'+esc(i.descripcion||'')+'</td></tr>'; }
-    return sp?('<tr><td class="d" style="padding-left:16px">'+esc(i.descripcion||'')+'</td><td class="r">'+Number(i.cantidad||1)+'</td><td class="r">'+money(i.precio)+'</td><td class="r">'+money(i.subtotal)+'</td></tr>'):('<tr><td class="d" style="padding-left:16px">'+esc(i.descripcion||'')+'</td><td class="r">'+Number(i.cantidad||1)+'</td></tr>');
+    return sp?('<tr><td class="d" style="padding-left:16px">'+esc(i.descripcion||'')+'</td><td class="r">'+Number(i.cantidad||1)+'</td><td class="r">'+money(i.precio)+'</td><td class="r">'+money(i.subtotal)+'</td></tr>'):('<tr><td class="r">'+Number(i.cantidad||1)+'</td><td class="d" style="padding-left:16px">'+esc(i.descripcion||'')+'</td></tr>');
   }).join('');
 }
 
