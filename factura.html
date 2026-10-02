@@ -25,7 +25,7 @@
   .fx .tt{font-size:20px;font-weight:800}.fx .rc{border:1px solid #111;border-top:0;padding:8px 14px;font-size:11px;line-height:1.7}
   .fx table.it{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}
   .fx table.it th{background:#efefef;border:1px solid #bbb;padding:5px 6px;text-align:left}.fx table.it td{border:1px solid #ddd;padding:5px 6px}
-  .fx .it td.r,.fx .it th.r{text-align:right}.fx .it td.d{width:55%}
+  .fx .it td.r,.fx .it th.r{text-align:right;width:1%;white-space:nowrap;padding-left:14px}.fx .it td.d{width:auto}
   .fx .tot{margin-top:10px;margin-left:auto;width:300px;font-size:12px}.fx .tot td{padding:3px 0}.fx .tot .g td{font-size:15px;font-weight:800;border-top:2px solid #111;padding-top:6px}
   .fx .qr{display:flex;gap:14px;align-items:center;margin-top:16px;border-top:1px dashed #999;padding-top:12px}
   .fx .cae{font-size:12px;line-height:1.7}.fx .cae b{font-size:14px}
@@ -55,7 +55,7 @@ function bad(t){ app.innerHTML='<div class="done">'+t+'</div>'; }
 
 /* Nivel de precio: ítems SIEMPRE visibles; el nivel decide qué precios se muestran (null => todo). */
 function nivFlags(comp){ var lvl=(comp.nivel==null?2:Number(comp.nivel)); return {sp:(comp.nivel==null||lvl>=2), ss:(comp.nivel==null||lvl>=1)}; }
-function arcaHead(sp){ return sp?'<tr><th class="d">Descripción</th><th class="r">Cant.</th><th class="r">P. Unit.</th><th class="r">Subtotal</th></tr>':'<tr><th class="r" style="width:60px">Cant.</th><th class="d">Descripción</th></tr>'; }
+function arcaHead(sp){ return sp?'<tr><th class="d">Descripción</th><th class="r">Cant.</th><th class="r">P. Unit.</th><th class="r">Subtotal</th></tr>':'<tr><th class="r">Cant.</th><th class="d">Descripción</th></tr>'; }
 function arcaRows(comp,items,sp,ss){
   if(!items.length){ return sp?('<tr><td class="d">'+esc(comp.concepto||'Servicios')+'</td><td class="r">1</td><td class="r">'+money(comp.neto)+'</td><td class="r">'+money(comp.neto)+'</td></tr>'):('<tr><td class="r">1</td><td class="d">'+esc(comp.concepto||'Servicios')+'</td></tr>'); }
   return items.map(function(i){
