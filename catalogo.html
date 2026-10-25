@@ -156,6 +156,14 @@ function App(){
   });
   const cartItems=Object.values(cart);
   const cartCount=cartItems.reduce((a,i)=>a+i.qty,0);
+
+  // Puente con el asistente del catálogo (catalogo-asistente.js)
+  window.__tsCatalogo = { desde, hasta, busqueda:q.trim()||null, carrito: cartItems.map(i=>i.qty+" x "+i.p.nombre) };
+  useEffect(()=>{
+    const onAdd=(e)=>{ const p=e.detail; if(p&&p.id) setQty(p,1); };
+    window.addEventListener("tsbot:agregar",onAdd);
+    return ()=>window.removeEventListener("tsbot:agregar",onAdd);
+  },[]);
   let cartTotal=0, hayCotizar=false;
   cartItems.forEach(i=>{ if(i.p.precio_alquiler>0){ cartTotal+= i.p.precio_alquiler*mult*i.qty; } else { hayCotizar=true; } });
 
@@ -325,5 +333,6 @@ function App(){
 }
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
+<script src="/catalogo-asistente.js?v=1" defer></script>
 </body>
 </html>
