@@ -17,8 +17,10 @@
     --ink:#E9ECF1;--ink-2:#8C95A4;--ink-3:#5C6675;--amber:#1FC3B8;--amber-dim:#155E56;
     --live:#35D07F;--alert:#FF4D5E;--mono:'JetBrains Mono',ui-monospace,monospace;
   }
-  *{box-sizing:border-box} html,body{margin:0;padding:0}
-  body{background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box} html,body{margin:0;padding:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;overflow:hidden}
+  #root{height:100vh}
+  .app{height:100vh;display:flex;flex-direction:column;min-height:0}
   h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em}
   .mono{font-family:var(--mono)} button{font-family:inherit;cursor:pointer} input,select{font-family:inherit}
   ::selection{background:var(--amber);color:#000}
@@ -36,14 +38,14 @@
   .fld input:focus,.fld select:focus{border-color:var(--amber)}
   .tramoinfo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
   .tramoinfo b{color:var(--amber)}
-  .wrap{display:grid;grid-template-columns:210px 1fr;gap:0;min-height:60vh}
+  .wrap{display:grid;grid-template-columns:210px 1fr;gap:0;flex:1;min-height:0}
   @media(max-width:820px){.wrap{grid-template-columns:1fr}.rail{display:none!important}}
-  .rail{border-right:1px solid var(--line);padding:18px 14px;background:var(--panel)}
+  .rail{border-right:1px solid var(--line);padding:18px 14px;background:var(--panel);overflow:auto}
   .rail h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:500}
   .areabtn{width:100%;text-align:left;background:none;border:0;color:var(--ink-2);padding:8px 10px;border-radius:6px;font-size:13px;display:flex;justify-content:space-between;gap:8px}
   .areabtn:hover{background:var(--panel-2);color:var(--ink)}
   .areabtn.sel{background:var(--panel-2);color:var(--ink);box-shadow:inset 2px 0 0 var(--amber)}
-  .main{padding:18px 20px 90px}
+  .main{padding:18px 20px 90px;overflow:auto;min-height:0}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .card:hover{border-color:var(--line-hi)}
@@ -186,7 +188,7 @@ function App(){
   const grupos=agrupar(rows);
 
   return (
-    <div>
+    <div className="app">
       <div className="topbar">
         <div className="brand" style={{alignItems:"center"}}>
           <img src={LOGO} alt="Tabia'S Sound" style={{height:34,width:"auto",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
