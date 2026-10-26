@@ -3,7 +3,7 @@
 // mediante window.__tsCatalogo (contexto) y el evento "tsbot:agregar" (agregar al pedido).
 (function () {
   var API = 'https://tabiasound.com.ar/api/catalogo-chat/';
-  var AVATAR = 'https://tabiasound.com.ar/img/microman.svg'; // con barra final: sin ella hay una redirección que rompe CORS
+  var AVATAR = 'https://tabiasound.com.ar/img/microman-cara.svg'; // con barra final: sin ella hay una redirección que rompe CORS
   var lang = (navigator.language || 'es').slice(0, 2);
   if (['es', 'en', 'pt'].indexOf(lang) < 0) lang = 'es';
   var T = {
