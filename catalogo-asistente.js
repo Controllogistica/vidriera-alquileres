@@ -5,7 +5,7 @@
   var API = 'https://tabiasound.com.ar/api/catalogo-chat/'; // con barra final: sin ella hay una redirección que rompe CORS
   var AVATAR = 'https://tabiasound.com.ar/img/microman-cara.svg';
   var lang = (navigator.language || 'es').slice(0, 2);
-  if (['es', 'en', 'pt'].indexOf(lang) < 0) lang = 'es';
+  if (['es', 'en', 'pt', 'ar', 'zh'].indexOf(lang) < 0) lang = 'es';
   var T = {
     es: { open: '¿No encontrás un equipo? Preguntale a Microman', title: 'Microman', sub: 'Asistente del catálogo', hello: '¡Hola! Soy Microman. Contame qué equipo buscás o para qué lo necesitás, y te muestro lo que tenemos en el catálogo. Si no lo tenemos, te sugiero una alternativa.',
           ph: 'Ej: una consola de 16 canales…', send: 'Enviar', close: 'Cerrar', add: 'Agregar al pedido', added: 'Agregado ✓', wa: 'Seguir por WhatsApp',
@@ -15,7 +15,13 @@
           err: 'Something went wrong. Try again or message us on WhatsApp at +54 9 11 4474-0856.', note: 'AI assistant. It does not confirm availability or prices: our team confirms them with your order.', typing: 'Searching…' },
     pt: { open: 'Não encontrou um equipamento? Pergunte ao Microman', title: 'Microman', sub: 'Assistente do catálogo', hello: 'Olá! Sou o Microman. Conte qual equipamento você procura ou para que precisa, e eu mostro o que temos no catálogo. Se não tivermos, sugiro uma alternativa.',
           ph: 'Ex.: uma mesa de 16 canais…', send: 'Enviar', close: 'Fechar', add: 'Adicionar ao pedido', added: 'Adicionado ✓', wa: 'Continuar no WhatsApp',
-          err: 'Houve um problema. Tente de novo ou fale pelo WhatsApp +54 9 11 4474-0856.', note: 'Assistente com IA. Não confirma disponibilidade nem preços: a equipe confirma com o seu pedido.', typing: 'Buscando…' }
+          err: 'Houve um problema. Tente de novo ou fale pelo WhatsApp +54 9 11 4474-0856.', note: 'Assistente com IA. Não confirma disponibilidade nem preços: a equipe confirma com o seu pedido.', typing: 'Buscando…' },
+    ar: { open: 'لا تجد جهازًا؟ اسأل Microman', title: 'Microman', sub: 'مساعد الكتالوج', hello: 'مرحبًا! أنا Microman. أخبرني بالجهاز الذي تبحث عنه أو بما تحتاجه، وسأعرض عليك ما لدينا في الكتالوج. وإن لم يكن متوفرًا، أقترح عليك بديلًا.',
+          ph: 'مثال: مكسر صوت بـ 16 قناة…', send: 'إرسال', close: 'إغلاق', add: 'أضف إلى الطلب', added: 'تمت الإضافة ✓', wa: 'تابع عبر واتساب',
+          err: 'حدثت مشكلة. حاول مرة أخرى أو راسلنا عبر واتساب على ‎+54 9 11 4474-0856.', note: 'مساعد بالذكاء الاصطناعي. لا يؤكد التوفر ولا الأسعار: يؤكدها فريقنا مع طلبك.', typing: 'جارٍ البحث…' },
+    zh: { open: '找不到设备？问问 Microman', title: 'Microman', sub: '目录助手', hello: '您好！我是 Microman。告诉我您要找的设备或用途，我会为您展示目录中的设备。如果我们没有，我会推荐替代方案。',
+          ph: '例如：16路调音台…', send: '发送', close: '关闭', add: '加入订单', added: '已加入 ✓', wa: '通过 WhatsApp 继续',
+          err: '出了点问题。请重试，或通过 WhatsApp 联系我们：+54 9 11 4474-0856。', note: 'AI 助手，不确认库存和价格：我们的团队会根据您的订单确认。', typing: '正在查找…' }
   }[lang];
 
   var css = '' +
@@ -63,7 +69,7 @@
   var btn = el('button', { type: 'button', class: 'cab-btn', 'aria-expanded': 'false' });
   btn.innerHTML = '<img src="' + AVATAR + '" alt="" width="34" height="34">';
   btn.appendChild(el('span', null, T.open));
-  var panel = el('section', { class: 'cab-panel', role: 'dialog', 'aria-label': T.title, hidden: '' });
+  var panel = el('section', { class: 'cab-panel', role: 'dialog', 'aria-label': T.title, hidden: '', dir: lang === 'ar' ? 'rtl' : 'ltr' });
   var head = el('div', { class: 'cab-head' });
   var hid = el('div', { class: 'cab-id' }); hid.innerHTML = '<img src="' + AVATAR + '" alt="" width="36" height="36">';
   var hn = el('div'); hn.appendChild(el('b', null, T.title)); hn.appendChild(el('small', null, T.sub)); hid.appendChild(hn); head.appendChild(hid);
