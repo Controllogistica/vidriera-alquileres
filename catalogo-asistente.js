@@ -2,24 +2,26 @@
 // Habla con https://tabiasound.com.ar/api/catalogo-chat. Se comunica con la página
 // mediante window.__tsCatalogo (contexto) y el evento "tsbot:agregar" (agregar al pedido).
 (function () {
-  var API = 'https://tabiasound.com.ar/api/catalogo-chat/'; // con barra final: sin ella hay una redirección que rompe CORS
+  var API = 'https://tabiasound.com.ar/api/catalogo-chat/';
+  var AVATAR = 'https://tabiasound.com.ar/img/microman.svg'; // con barra final: sin ella hay una redirección que rompe CORS
   var lang = (navigator.language || 'es').slice(0, 2);
   if (['es', 'en', 'pt'].indexOf(lang) < 0) lang = 'es';
   var T = {
-    es: { open: '¿No encontrás un equipo?', title: 'Asistente del catálogo', hello: '¡Hola! Contame qué equipo buscás o para qué lo necesitás, y te muestro lo que tenemos en el catálogo. Si no lo tenemos, te sugiero una alternativa.',
+    es: { open: '¿No encontrás un equipo? Preguntale a Microman', title: 'Microman', sub: 'Asistente del catálogo', hello: '¡Hola! Soy Microman. Contame qué equipo buscás o para qué lo necesitás, y te muestro lo que tenemos en el catálogo. Si no lo tenemos, te sugiero una alternativa.',
           ph: 'Ej: una consola de 16 canales…', send: 'Enviar', close: 'Cerrar', add: 'Agregar al pedido', added: 'Agregado ✓', wa: 'Seguir por WhatsApp',
           err: 'Hubo un problema. Probá de nuevo o escribinos por WhatsApp al +54 9 11 4474-0856.', note: 'Asistente con IA. No confirma disponibilidad ni precios: eso lo confirma el equipo con tu pedido.', typing: 'Buscando…' },
-    en: { open: "Can't find a piece of gear?", title: 'Catalog assistant', hello: "Hi! Tell me what gear you're looking for or what you need it for, and I'll show you what we have. If we don't have it, I'll suggest an alternative.",
+    en: { open: "Can't find a piece of gear? Ask Microman", title: 'Microman', sub: 'Catalog assistant', hello: "Hi! I'm Microman. Tell me what gear you're looking for or what you need it for, and I'll show you what we have. If we don't have it, I'll suggest an alternative.",
           ph: 'e.g. a 16-channel mixer…', send: 'Send', close: 'Close', add: 'Add to order', added: 'Added ✓', wa: 'Continue on WhatsApp',
           err: 'Something went wrong. Try again or message us on WhatsApp at +54 9 11 4474-0856.', note: 'AI assistant. It does not confirm availability or prices: our team confirms them with your order.', typing: 'Searching…' },
-    pt: { open: 'Não encontrou um equipamento?', title: 'Assistente do catálogo', hello: 'Olá! Conte qual equipamento você procura ou para que precisa, e eu mostro o que temos no catálogo. Se não tivermos, sugiro uma alternativa.',
+    pt: { open: 'Não encontrou um equipamento? Pergunte ao Microman', title: 'Microman', sub: 'Assistente do catálogo', hello: 'Olá! Sou o Microman. Conte qual equipamento você procura ou para que precisa, e eu mostro o que temos no catálogo. Se não tivermos, sugiro uma alternativa.',
           ph: 'Ex.: uma mesa de 16 canais…', send: 'Enviar', close: 'Fechar', add: 'Adicionar ao pedido', added: 'Adicionado ✓', wa: 'Continuar no WhatsApp',
           err: 'Houve um problema. Tente de novo ou fale pelo WhatsApp +54 9 11 4474-0856.', note: 'Assistente com IA. Não confirma disponibilidade nem preços: a equipe confirma com o seu pedido.', typing: 'Buscando…' }
   }[lang];
 
   var css = '' +
     '.cab-btn{position:fixed;right:18px;bottom:18px;z-index:50;display:flex;align-items:center;gap:8px;background:var(--amber,#1FC3B8);color:#0C0E11;border:0;border-radius:999px;padding:12px 16px;font-weight:700;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer}' +
-    '.cab-btn svg{flex:none}' +
+    '.cab-btn img{flex:none;width:34px;height:34px;margin:-6px 0 -6px -4px;background:#0C0E11;border-radius:50%;padding:1px}' +
+    '.cab-id{display:flex;align-items:center;gap:10px}.cab-id img{flex:none;background:#0C0E11;border-radius:50%}.cab-id b{display:block;line-height:1.1}.cab-id small{display:block;font-size:11.5px;color:var(--ink-2,#8C95A4)}' +
     '.cab-panel{position:fixed;right:18px;bottom:76px;z-index:58;width:min(380px,calc(100vw - 24px));height:min(560px,calc(100vh - 110px));background:var(--panel,#14171C);border:1px solid var(--line-hi,#39424F);border-radius:14px;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.6);overflow:hidden}' +
     '.cab-panel[hidden]{display:none}' +
     '.cab-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line,#262C35)}' +
@@ -59,10 +61,12 @@
 
   var history = [], busy = false;
   var btn = el('button', { type: 'button', class: 'cab-btn', 'aria-expanded': 'false' });
-  btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+  btn.innerHTML = '<img src="' + AVATAR + '" alt="" width="34" height="34">';
   btn.appendChild(el('span', null, T.open));
   var panel = el('section', { class: 'cab-panel', role: 'dialog', 'aria-label': T.title, hidden: '' });
-  var head = el('div', { class: 'cab-head' }); head.appendChild(el('b', null, T.title));
+  var head = el('div', { class: 'cab-head' });
+  var hid = el('div', { class: 'cab-id' }); hid.innerHTML = '<img src="' + AVATAR + '" alt="" width="36" height="36">';
+  var hn = el('div'); hn.appendChild(el('b', null, T.title)); hn.appendChild(el('small', null, T.sub)); hid.appendChild(hn); head.appendChild(hid);
   var closeB = el('button', { type: 'button', class: 'cab-x', 'aria-label': T.close }, '×'); head.appendChild(closeB);
   var log = el('div', { class: 'cab-log', 'aria-live': 'polite' });
   var note = el('p', { class: 'cab-note' }, T.note);
